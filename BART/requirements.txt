@@ -1,0 +1,6 @@
+pymc
+pymc-bart
+numpy<2.2
+pandas
+scikit-learn
+kagglehub
