@@ -1,0 +1,21 @@
+{
+  "aggregate": {
+    "ate_abs_error": 0.12164717118361286,
+    "ate_hat": 4.807931770312263,
+    "ate_true": 4.7502395774402455,
+    "control_counterfactual_rmse": 1.1556916964068062,
+    "counterfactual_rmse": 2.152848368835822,
+    "pehe": 2.1438804128712263,
+    "treated_counterfactual_rmse": 3.8807527700606537
+  },
+  "experiment": {
+    "dataset_type": "original",
+    "input_dir": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv",
+    "k": 5,
+    "metric": "euclidean",
+    "pattern": "ihdp_npci_*.csv",
+    "scale": true,
+    "weighted": false
+  },
+  "num_replicas": 10
+}

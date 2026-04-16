@@ -1,0 +1,134 @@
+{
+  "experiment": {
+    "continuous_feature_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "description": "Per-replica column drop followed by Gaussian noise on visible continuous covariates.",
+    "drop_scope": "per_replication",
+    "drop_value": 0.0,
+    "gaussian_mean": 0.0,
+    "gaussian_std": 0.1,
+    "mode": "both",
+    "name": "both_per_replication_std_0p10_drop5",
+    "num_drop_columns": 5,
+    "seed": 20260417
+  },
+  "global_dropped_columns": null,
+  "replicas": [
+    {
+      "dropped_columns": [
+        8,
+        12,
+        15,
+        16,
+        18
+      ],
+      "output_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_per_replication_std_0p10_drop5\\datasets\\ihdp_npci_1.csv",
+      "source_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_1.csv"
+    },
+    {
+      "dropped_columns": [
+        8,
+        9,
+        10,
+        16,
+        18
+      ],
+      "output_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_per_replication_std_0p10_drop5\\datasets\\ihdp_npci_10.csv",
+      "source_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_10.csv"
+    },
+    {
+      "dropped_columns": [
+        11,
+        12,
+        13,
+        20,
+        23
+      ],
+      "output_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_per_replication_std_0p10_drop5\\datasets\\ihdp_npci_2.csv",
+      "source_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_2.csv"
+    },
+    {
+      "dropped_columns": [
+        4,
+        9,
+        11,
+        14,
+        18
+      ],
+      "output_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_per_replication_std_0p10_drop5\\datasets\\ihdp_npci_3.csv",
+      "source_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_3.csv"
+    },
+    {
+      "dropped_columns": [
+        1,
+        13,
+        14,
+        22,
+        24
+      ],
+      "output_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_per_replication_std_0p10_drop5\\datasets\\ihdp_npci_4.csv",
+      "source_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_4.csv"
+    },
+    {
+      "dropped_columns": [
+        7,
+        12,
+        13,
+        16,
+        20
+      ],
+      "output_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_per_replication_std_0p10_drop5\\datasets\\ihdp_npci_5.csv",
+      "source_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_5.csv"
+    },
+    {
+      "dropped_columns": [
+        2,
+        3,
+        8,
+        19,
+        24
+      ],
+      "output_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_per_replication_std_0p10_drop5\\datasets\\ihdp_npci_6.csv",
+      "source_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_6.csv"
+    },
+    {
+      "dropped_columns": [
+        1,
+        13,
+        15,
+        20,
+        21
+      ],
+      "output_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_per_replication_std_0p10_drop5\\datasets\\ihdp_npci_7.csv",
+      "source_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_7.csv"
+    },
+    {
+      "dropped_columns": [
+        3,
+        4,
+        8,
+        15,
+        21
+      ],
+      "output_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_per_replication_std_0p10_drop5\\datasets\\ihdp_npci_8.csv",
+      "source_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_8.csv"
+    },
+    {
+      "dropped_columns": [
+        5,
+        13,
+        18,
+        20,
+        23
+      ],
+      "output_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_per_replication_std_0p10_drop5\\datasets\\ihdp_npci_9.csv",
+      "source_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_9.csv"
+    }
+  ]
+}

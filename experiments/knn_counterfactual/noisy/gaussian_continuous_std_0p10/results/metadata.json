@@ -1,0 +1,39 @@
+{
+  "aggregate": {
+    "ate_abs_error": 0.1280029385410096,
+    "ate_hat": 4.815875292101878,
+    "ate_true": 4.7502395774402455,
+    "control_counterfactual_rmse": 1.153163912484918,
+    "counterfactual_rmse": 2.157472841089283,
+    "pehe": 2.1531099315994426,
+    "treated_counterfactual_rmse": 3.8937208780197827
+  },
+  "experiment": {
+    "dataset_type": "noisy",
+    "experiment_name": "gaussian_continuous_std_0p10",
+    "k": 5,
+    "metric": "euclidean",
+    "noise_spec": {
+      "continuous_feature_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "description": "Gaussian noise on continuous covariates only.",
+      "drop_scope": "global",
+      "drop_value": 0.0,
+      "gaussian_mean": 0.0,
+      "gaussian_std": 0.1,
+      "mode": "gaussian",
+      "name": "gaussian_continuous_std_0p10",
+      "num_drop_columns": 0,
+      "seed": 20260415
+    },
+    "scale": true,
+    "weighted": false
+  },
+  "num_replicas": 10
+}

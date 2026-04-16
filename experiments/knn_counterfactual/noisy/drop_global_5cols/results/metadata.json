@@ -1,0 +1,39 @@
+{
+  "aggregate": {
+    "ate_abs_error": 0.15042298014511263,
+    "ate_hat": 4.833338210975321,
+    "ate_true": 4.7502395774402455,
+    "control_counterfactual_rmse": 1.154633548625324,
+    "counterfactual_rmse": 2.36322033671784,
+    "pehe": 2.35246398623418,
+    "treated_counterfactual_rmse": 4.3892477770249085
+  },
+  "experiment": {
+    "dataset_type": "noisy",
+    "experiment_name": "drop_global_5cols",
+    "k": 5,
+    "metric": "euclidean",
+    "noise_spec": {
+      "continuous_feature_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "description": "Drop the same five covariate columns across all replicas.",
+      "drop_scope": "global",
+      "drop_value": 0.0,
+      "gaussian_mean": 0.0,
+      "gaussian_std": 0.0,
+      "mode": "drop",
+      "name": "drop_global_5cols",
+      "num_drop_columns": 5,
+      "seed": 20260416
+    },
+    "scale": true,
+    "weighted": false
+  },
+  "num_replicas": 10
+}

@@ -1,0 +1,39 @@
+{
+  "aggregate": {
+    "ate_abs_error": 0.13790571681708186,
+    "ate_hat": 4.820013365082363,
+    "ate_true": 4.7502395774402455,
+    "control_counterfactual_rmse": 1.1576345149529301,
+    "counterfactual_rmse": 2.16808746807183,
+    "pehe": 2.1524769580545238,
+    "treated_counterfactual_rmse": 3.9468622778365514
+  },
+  "experiment": {
+    "dataset_type": "noisy",
+    "experiment_name": "both_per_replication_std_0p10_drop5",
+    "k": 5,
+    "metric": "euclidean",
+    "noise_spec": {
+      "continuous_feature_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "description": "Per-replica column drop followed by Gaussian noise on visible continuous covariates.",
+      "drop_scope": "per_replication",
+      "drop_value": 0.0,
+      "gaussian_mean": 0.0,
+      "gaussian_std": 0.1,
+      "mode": "both",
+      "name": "both_per_replication_std_0p10_drop5",
+      "num_drop_columns": 5,
+      "seed": 20260417
+    },
+    "scale": true,
+    "weighted": false
+  },
+  "num_replicas": 10
+}

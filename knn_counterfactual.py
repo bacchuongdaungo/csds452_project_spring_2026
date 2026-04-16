@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 import numpy as np
 
 
-DEFAULT_DATA_GLOB = "data/ihdp_dataset/csv/ihdp_npci_*.csv"
+DEFAULT_DATA_PATTERN = "ihdp_npci_*.csv"
+DEFAULT_DATA_GLOB = f"data/ihdp_dataset/csv/{DEFAULT_DATA_PATTERN}"
 
 
 @dataclass(frozen=True)
@@ -185,12 +188,133 @@ def rmse(y_pred: np.ndarray, y_true: np.ndarray) -> float:
     return float(math.sqrt(np.mean((y_pred - y_true) ** 2)))
 
 
-def iter_replica_paths(input_path: str | None) -> list[Path]:
+def iter_replica_paths(
+    input_path: str | None = None,
+    input_dir: str | Path | None = None,
+    pattern: str = DEFAULT_DATA_PATTERN,
+) -> list[Path]:
+    if input_path and input_dir:
+        raise ValueError("Provide only one of input_path or input_dir.")
     if input_path:
         return [Path(input_path)]
+    if input_dir:
+        return sorted(Path(input_dir).glob(pattern))
 
     base_dir = Path(__file__).resolve().parent
     return sorted(base_dir.glob(DEFAULT_DATA_GLOB))
+
+
+def evaluate_replica_paths(
+    paths: Iterable[str | Path],
+    k: int = 5,
+    metric: str = "euclidean",
+    scale: bool = True,
+    weighted: bool = False,
+) -> list[KNNCounterfactualResult]:
+    return [
+        estimate_counterfactuals(
+            dataset=load_ihdp_replica(path),
+            k=k,
+            metric=metric,
+            scale=scale,
+            weighted=weighted,
+        )
+        for path in paths
+    ]
+
+
+def result_to_record(result: KNNCounterfactualResult) -> dict[str, Any]:
+    return {
+        "dataset": result.dataset.name,
+        "dataset_path": str(result.dataset),
+        "k": result.k,
+        "metric": result.metric,
+        "scaled": result.scaled,
+        "weighted": result.weighted,
+        "counterfactual_rmse": result.counterfactual_rmse,
+        "control_counterfactual_rmse": result.control_counterfactual_rmse,
+        "treated_counterfactual_rmse": result.treated_counterfactual_rmse,
+        "pehe": result.pehe,
+        "ate_hat": result.ate_hat,
+        "ate_true": result.ate_true,
+        "ate_abs_error": result.ate_abs_error,
+    }
+
+
+def aggregate_result_records(records: Iterable[dict[str, Any]]) -> dict[str, float] | None:
+    rows = list(records)
+    if not rows:
+        return None
+
+    numeric_fields = (
+        "counterfactual_rmse",
+        "control_counterfactual_rmse",
+        "treated_counterfactual_rmse",
+        "pehe",
+        "ate_hat",
+        "ate_true",
+        "ate_abs_error",
+    )
+    return {field: float(np.mean([row[field] for row in rows])) for field in numeric_fields}
+
+
+def save_results(
+    output_dir: str | Path,
+    results: Iterable[KNNCounterfactualResult],
+    extra_metadata: dict[str, Any] | None = None,
+) -> dict[str, Path]:
+    rows = list(results)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    records = [result_to_record(row) for row in rows]
+    aggregate = aggregate_result_records(records)
+    metadata = {
+        "num_replicas": len(records),
+        "aggregate": aggregate,
+    }
+    if extra_metadata:
+        metadata["experiment"] = extra_metadata
+
+    summary_path = output_path / "summary.txt"
+    summary_path.write_text(summarize_results(rows) + "\n", encoding="utf-8")
+
+    json_path = output_path / "metrics.json"
+    json_path.write_text(
+        json.dumps({"metadata": metadata, "replicas": records}, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    csv_path = output_path / "metrics.csv"
+    fieldnames = list(records[0].keys()) if records else [
+        "dataset",
+        "dataset_path",
+        "k",
+        "metric",
+        "scaled",
+        "weighted",
+        "counterfactual_rmse",
+        "control_counterfactual_rmse",
+        "treated_counterfactual_rmse",
+        "pehe",
+        "ate_hat",
+        "ate_true",
+        "ate_abs_error",
+    ]
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(records)
+
+    metadata_path = output_path / "metadata.json"
+    metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    return {
+        "summary": summary_path,
+        "json": json_path,
+        "csv": csv_path,
+        "metadata": metadata_path,
+    }
 
 
 def summarize_results(results: Iterable[KNNCounterfactualResult]) -> str:
@@ -251,6 +375,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="Path to one IHDP replica CSV. Omit to evaluate all bundled replicas.",
     )
+    parser.add_argument(
+        "--input-dir",
+        type=str,
+        default=None,
+        help="Directory containing IHDP replica CSVs.",
+    )
+    parser.add_argument(
+        "--pattern",
+        type=str,
+        default=DEFAULT_DATA_PATTERN,
+        help="Filename glob to use with --input-dir. Default: ihdp_npci_*.csv.",
+    )
     parser.add_argument("--k", type=int, default=5, help="Number of opposite-group neighbors.")
     parser.add_argument(
         "--metric",
@@ -268,26 +404,44 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable z-score scaling of covariates before computing distances.",
     )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help="Optional directory to save summary.txt, metrics.json, metrics.csv, and metadata.json.",
+    )
     return parser
 
 
 def main() -> None:
     args = build_arg_parser().parse_args()
-    paths = iter_replica_paths(args.input)
+    paths = iter_replica_paths(args.input, args.input_dir, args.pattern)
     if not paths:
         raise SystemExit("No IHDP replica CSVs found.")
 
-    results = [
-        estimate_counterfactuals(
-            dataset=load_ihdp_replica(path),
-            k=args.k,
-            metric=args.metric,
-            scale=not args.no_scale,
-            weighted=args.weighted,
+    results = evaluate_replica_paths(
+        paths=paths,
+        k=args.k,
+        metric=args.metric,
+        scale=not args.no_scale,
+        weighted=args.weighted,
+    )
+    summary = summarize_results(results)
+    print(summary)
+    if args.output_dir:
+        save_results(
+            output_dir=args.output_dir,
+            results=results,
+            extra_metadata={
+                "input_path": args.input,
+                "input_dir": args.input_dir,
+                "pattern": args.pattern,
+                "k": args.k,
+                "metric": args.metric,
+                "scale": not args.no_scale,
+                "weighted": args.weighted,
+            },
         )
-        for path in paths
-    ]
-    print(summarize_results(results))
 
 
 if __name__ == "__main__":
