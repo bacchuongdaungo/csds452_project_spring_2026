@@ -150,6 +150,8 @@ def run_bart_on_replica(
     draws: int = 500,
     tune: int = 500,
     random_seed: int = 42,
+    alpha: float = 0.95,
+    beta: float = 2.0,
 ) -> dict[str, float]:
 
     X = dataset.x
@@ -182,7 +184,7 @@ def run_bart_on_replica(
     Y_all = np.concatenate([Y_tr, np.zeros(2 * n_te)])
 
     with pm.Model() as bart_model:
-        mu_all = pmb.BART("mu_all", X=X_all, Y=Y_all, m=n_trees)
+        mu_all = pmb.BART("mu_all", X=X_all, Y=Y_all, m=n_trees, alpha=alpha, beta=beta)
         sigma = pm.HalfNormal("sigma", sigma=1.0)
         pm.Normal("y_obs", mu=mu_all[:n_tr], sigma=sigma, observed=Y_tr)
 
@@ -299,6 +301,8 @@ if __name__ == "__main__":
     parser.add_argument("--draws", type=int, default=500)
     parser.add_argument("--tune", type=int, default=500)
     parser.add_argument("--n", type=int, default=10)
+    parser.add_argument("--alpha", type=float, default=0.95)
+    parser.add_argument("--beta",  type=float, default=2.0)
     args = parser.parse_args()
 
     if args.test:

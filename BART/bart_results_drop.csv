@@ -1,9 +1,0 @@
-replica,status,pehe,ate_error,att_error,policy_value,cf_rmse,control_cf_rmse,treated_cf_rmse
-ihdp_npci_1_noisy_drop_12.csv,ok,0.4935,0.0389,0.1297,1.0,1.0771,1.0738,1.0883
-ihdp_npci_1_noisy_drop_15.csv,ok,0.6497,0.0668,0.0849,1.0,1.0574,1.0594,1.05
-ihdp_npci_1_noisy_drop_3.csv,ok,0.6392,0.0302,0.0915,0.9933,0.959,0.9606,0.9529
-ihdp_npci_1_noisy_drop_6.csv,ok,0.4996,0.1435,0.2078,1.0,0.9576,0.9395,1.024
-ihdp_npci_1_noisy_drop_9.csv,ok,0.5429,0.1302,0.1304,0.9867,0.9661,0.9658,0.9673
-MEAN,,0.565,0.0819,0.1289,0.996,1.0034,0.9998,1.0165
-STD,,0.0751,0.0521,0.0489,0.006,0.0588,0.062,0.0566
-MEDIAN,,0.5429,0.0668,0.1297,1.0,0.9661,0.9658,1.024
