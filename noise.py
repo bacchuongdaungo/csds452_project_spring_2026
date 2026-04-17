@@ -38,7 +38,7 @@ def write_csv(data_array: np.ndarray, output_path, csv_columns=None) -> None:
     df = df.map(pretty_float)
     df.to_csv(output_path, index=False)
 
-'''
+
 for i in range(5):
     std = (i + 1) * 0.2
     std_label = f"{std:.1f}"
@@ -51,7 +51,7 @@ for i in range(5):
     )
     output_path = noisy_root / f"ihdp_npci_1_noisy_std_{std_label}.csv"
     write_csv(data_noisy, output_path)
-'''
+
 '''
 drop_rng = np.random.default_rng(42)
 all_feature_indices = np.arange(x.shape[1])
@@ -82,7 +82,7 @@ for _ in range(5):
 #Both noise and drop
 data_noisy = data.copy()
 data_noisy[:, 5:] = apply_gaussian_noise(
-        x,
+        data_noisy[:, 5:],
         gaussian_std=0.5,
         gaussian_mean=0.0,
         rng=np.random.default_rng(42),

@@ -22,6 +22,7 @@ from typing import Any, Sequence
 import numpy as np
 
 
+
 FEATURE_DROP_MASK_KEY = "feature_drop_mask"
 LAYOUT_CHOICES = ("auto", "nsf", "snr", "rns")
 MODE_CHOICES = ("gaussian", "drop", "both")
@@ -208,7 +209,7 @@ def apply_gaussian_noise(
     continuous_feature_indices: list[int] | None = None,
     protected_mask: np.ndarray | None = None,
 ) -> np.ndarray:
-    """Add Gaussian noise to the selected covariate entries only."""
+    """Add Gaussian noise scaled by each feature column's own standard deviation."""
     if gaussian_std < 0:
         raise ValueError("gaussian_std must be non-negative.")
 
@@ -227,7 +228,19 @@ def apply_gaussian_noise(
             )
         apply_mask &= ~protected_mask[:, np.newaxis, :]
 
-    noise = rng.normal(loc=gaussian_mean, scale=gaussian_std, size=x_noisy.shape)
+    feature_stds = np.nanstd(x_noisy, axis=(0, 1), ddof=0)
+    feature_stds = np.where(
+        np.isnan(feature_stds) | (feature_stds == 0.0),
+        1.0,
+        feature_stds,
+    )
+
+    noise = rng.normal(
+        loc=gaussian_mean,
+        scale=gaussian_std * feature_stds,
+        size=x_noisy.shape,
+    )
+
     x_noisy[apply_mask] = x_noisy[apply_mask] + noise[apply_mask]
     return x_noisy
 
