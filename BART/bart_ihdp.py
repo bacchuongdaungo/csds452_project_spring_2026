@@ -1,118 +1,177 @@
+from __future__ import annotations
 import argparse
-import os
+import math
 import warnings
+from dataclasses import dataclass
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
-# Load IHDP data from Kaggle
-def load_ihdp():
-    import kagglehub
+# Data
+CEVAE_BASE = (
+    "https://raw.githubusercontent.com/AMLab-Amsterdam/CEVAE/"
+    "9081f863e24ce21bd34c8d6a41bf0edc7d1b65dd/datasets/IHDP"
+)
 
-    print("Downloading IHDP data from Kaggle...")
-    path = kagglehub.dataset_download("konradb/ihdp-data")
+# DATA_DIR = Path("../experiments/data/ihdp_datasets/csv")
 
-    # Find the CSV
-    csv_files = [f for f in os.listdir(path) if f.endswith(".csv")]
-    if not csv_files:
-        raise FileNotFoundError(f"No CSV found in {path}")
+DATA_DIR = Path("../experiments/knn_counterfactual/noisy/both_per_replication_std_0p10_drop5/datasets")
+# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/drop_global_5cols/datasets")
+# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/gaussian_continuous_std_0p10/ihdp_dataset/csv")
 
-    df = pd.read_csv(os.path.join(path, csv_files[0]))
-    print(f"Loaded: {df.shape[0]} units, {df.shape[1]} columns")
+@dataclass(frozen=True)
+class IHDPDataset:
+    path: Path
+    treatment: np.ndarray
+    y_factual: np.ndarray
+    y_cfactual: np.ndarray
+    mu0: np.ndarray
+    mu1: np.ndarray
+    x: np.ndarray
 
-    # Covariates
-    cov_cols = [f"x{i}" for i in range(1, 26)]
-    X   = df[cov_cols].values.astype(float)
-    T   = df["treatment"].values.astype(float)
-    Y   = df["y_factual"].values.astype(float)
-    mu0 = df["mu0"].values.astype(float)
-    mu1 = df["mu1"].values.astype(float)
+    @property
+    def true_y0(self) -> np.ndarray:
+        return np.where(self.treatment == 0, self.y_factual, self.y_cfactual)
 
-    # 80/20 train/test split — fixed seed for reproducibility
-    idx = np.arange(len(X))
-    idx_tr, idx_te = train_test_split(idx, test_size=0.2, random_state=42)
-
-    return {
-        "X_tr":   X[idx_tr],
-        "T_tr":   T[idx_tr],
-        "Y_tr":   Y[idx_tr],
-        "X_te":   X[idx_te],
-        "T_te":   T[idx_te],
-        "mu0_te": mu0[idx_te],
-        "mu1_te": mu1[idx_te],
-    }
+    @property
+    def true_y1(self) -> np.ndarray:
+        return np.where(self.treatment == 1, self.y_factual, self.y_cfactual)
 
 
-# metrics
-def compute_metrics(tau_pred, mu0_true, mu1_true, T_test):
+def download_replicas(data_dir: Path = DATA_DIR) -> None:
+    import urllib.request
+    data_dir.mkdir(parents=True, exist_ok=True)
+    for i in range(1, 11):
+        dest = data_dir / f"ihdp_npci_{i}.csv"
+        if dest.exists():
+            continue
+        url = f"{CEVAE_BASE}/csv/ihdp_npci_{i}.csv"
+        print(f"  Downloading ihdp_npci_{i}.csv ...")
+        urllib.request.urlretrieve(url, dest)
+
+
+def load_replica(path: Path) -> IHDPDataset:
+    data = np.loadtxt(path, delimiter=",", dtype=float)
+    if data.ndim != 2 or data.shape[1] < 6:
+        raise ValueError(f"Unexpected shape {data.shape} in {path}")
+    return IHDPDataset(
+        path=path,
+        treatment=data[:, 0].astype(int),
+        y_factual=data[:, 1],
+        y_cfactual=data[:, 2],
+        mu0=data[:, 3],
+        mu1=data[:, 4],
+        x=data[:, 5:],
+    )
+
+
+def load_all_replicas(data_dir: Path = DATA_DIR) -> list[IHDPDataset]:
+    print("Checking IHDP replica CSVs...")
+    download_replicas(data_dir)
+    paths = sorted(data_dir.glob("ihdp_npci_*.csv"))
+    datasets = [load_replica(p) for p in paths]
+    print(f"Loaded {len(datasets)} replicas — "
+          f"{datasets[0].x.shape[0]} units, {datasets[0].x.shape[1]} covariates each")
+    return datasets
+
+
+# Metrics
+def rmse(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+    return float(math.sqrt(np.mean((y_pred - y_true) ** 2)))
+
+
+def compute_metrics(
+    tau_pred: np.ndarray,
+    mu0_true: np.ndarray,
+    mu1_true: np.ndarray,
+    y0_pred: np.ndarray,
+    y1_pred: np.ndarray,
+    y_factual: np.ndarray,
+    y_cfactual: np.ndarray,
+    treatment: np.ndarray,
+) -> dict[str, float]:
     tau_true = mu1_true - mu0_true
+    treated_mask = treatment == 1
+    control_mask = ~treated_mask
 
-    # PEHE
-    pehe = np.sqrt(np.mean((tau_pred - tau_true) ** 2))
+    pehe = rmse(tau_pred, tau_true)
+    ate_error = float(abs(tau_pred.mean() - tau_true.mean()))
 
-    # ATE error
-    ate_error = np.abs(tau_pred.mean() - tau_true.mean())
-
-    # ATT error
-    att_mask = T_test == 1
-    if att_mask.sum() == 0:
-        att_error = np.nan
+    if treated_mask.sum() == 0:
+        att_error = float("nan")
     else:
-        att_error = np.abs(
-            tau_pred[att_mask].mean() - tau_true[att_mask].mean()
-        )
+        att_error = float(abs(
+            tau_pred[treated_mask].mean() - tau_true[treated_mask].mean()
+        ))
 
-    # Policy value
-    policy_pred  = (tau_pred > 0).astype(int)
-    policy_true  = (tau_true > 0).astype(int)
-    policy_value = (policy_pred == policy_true).mean()
+    policy_pred = (tau_pred > 0).astype(int)
+    policy_true = (tau_true > 0).astype(int)
+    policy_value = float((policy_pred == policy_true).mean())
+
+    # Counterfactual RMSE — matches KNN teammate output
+    y_cf_hat = np.where(treated_mask, y0_pred, y1_pred)
+    cf_rmse = rmse(y_cf_hat, y_cfactual)
+    control_cf_rmse = rmse(y_cf_hat[control_mask], y_cfactual[control_mask])
+    treated_cf_rmse = rmse(y_cf_hat[treated_mask], y_cfactual[treated_mask])
 
     return {
-        "pehe":         round(float(pehe), 4),
-        "ate_error":    round(float(ate_error), 4),
-        "att_error":    round(float(att_error), 4),
-        "policy_value": round(float(policy_value), 4),
+        "pehe":            round(pehe, 4),
+        "ate_error":       round(ate_error, 4),
+        "att_error":       round(att_error, 4),
+        "policy_value":    round(policy_value, 4),
+        "cf_rmse":         round(cf_rmse, 4),
+        "control_cf_rmse": round(control_cf_rmse, 4),
+        "treated_cf_rmse": round(treated_cf_rmse, 4),
     }
 
 
-# Bart Implementation
-# Hill (2011): fit BART with T as a covariate, predict counterfactuals by toggling T=1 and T=0 for all test units.
-def run_bart(data, n_trees=50, draws=500, tune=500, random_seed=42):
+# BART — Hill (2011): fit with T as covariate, predict counterfactuals by toggling T
+def run_bart_on_replica(
+    dataset: IHDPDataset,
+    n_trees: int = 50,
+    draws: int = 500,
+    tune: int = 500,
+    random_seed: int = 42,
+) -> dict[str, float]:
     import pymc as pm
     import pymc_bart as pmb
 
-    X_tr   = data["X_tr"]
-    T_tr   = data["T_tr"]
-    Y_tr   = data["Y_tr"]
-    X_te   = data["X_te"]
-    T_te   = data["T_te"]
-    mu0_te = data["mu0_te"]
-    mu1_te = data["mu1_te"]
+    X = dataset.x
+    T = dataset.treatment.astype(float)
+    Y = dataset.y_factual
 
-    # Stack T as last covariate — Hill (2011)
+    rng = np.random.default_rng(random_seed)
+    idx = rng.permutation(len(X))
+    n_tr = int(0.8 * len(X))
+    idx_tr = idx[:n_tr]
+    idx_te = idx[n_tr:]
+
+    X_tr, T_tr, Y_tr = X[idx_tr], T[idx_tr], Y[idx_tr]
+    X_te, T_te = X[idx_te], T[idx_te]
+    mu0_te, mu1_te = dataset.mu0[idx_te], dataset.mu1[idx_te]
+    y_factual_te = dataset.y_factual[idx_te]
+    y_cfactual_te = dataset.y_cfactual[idx_te]
+
     XT_tr = np.column_stack([X_tr, T_tr])
     scaler = StandardScaler()
-    XT_tr_scaled = scaler.fit_transform(XT_tr)
+    XT_tr_s = scaler.fit_transform(XT_tr)
 
-    # Counterfactual test matrices
     X_te_t1 = scaler.transform(np.column_stack([X_te, np.ones(len(X_te))]))
     X_te_t0 = scaler.transform(np.column_stack([X_te, np.zeros(len(X_te))]))
 
-    n_tr = len(X_tr)
     n_te = len(X_te)
 
-    # Combined X: [train | test_T1 | test_T0]
-    X_all = np.vstack([XT_tr_scaled, X_te_t1, X_te_t0])
+    # Combined X: [train | test_T1 | test_T0] — pymc-bart 0.9.x has no predict fn
+    X_all = np.vstack([XT_tr_s, X_te_t1, X_te_t0])
     Y_all = np.concatenate([Y_tr, np.zeros(2 * n_te)])
 
     with pm.Model() as bart_model:
         mu_all = pmb.BART("mu_all", X=X_all, Y=Y_all, m=n_trees)
-        sigma  = pm.HalfNormal("sigma", sigma=1.0)
-        # Likelihood only on training rows
+        sigma = pm.HalfNormal("sigma", sigma=1.0)
         pm.Normal("y_obs", mu=mu_all[:n_tr], sigma=sigma, observed=Y_tr)
 
         idata = pm.sample(
@@ -120,58 +179,124 @@ def run_bart(data, n_trees=50, draws=500, tune=500, random_seed=42):
             tune=tune,
             cores=1,
             random_seed=random_seed,
-            progressbar=True,
+            progressbar=False,
             return_inferencedata=True,
         )
 
-    # Slice test predictions from posterior
-    # mu_all shape: (chains, draws, n_tr + 2*n_te)
-    mu_posterior = idata.posterior["mu_all"].values  # type: ignore[union-attr]
-    mu1_pred = mu_posterior[:, :, n_tr : n_tr + n_te].mean(axis=(0, 1))
-    mu0_pred = mu_posterior[:, :, n_tr + n_te :].mean(axis=(0, 1))
-    tau_pred = mu1_pred - mu0_pred
+    mu_post = idata.posterior["mu_all"].values  # type: ignore[union-attr]
+    y1_pred = mu_post[:, :, n_tr:n_tr + n_te].mean(axis=(0, 1))
+    y0_pred = mu_post[:, :, n_tr + n_te:].mean(axis=(0, 1))
+    tau_pred = y1_pred - y0_pred
 
-    return compute_metrics(tau_pred, mu0_te, mu1_te, T_te)
+    return compute_metrics(
+        tau_pred=tau_pred,
+        mu0_true=mu0_te,
+        mu1_true=mu1_te,
+        y0_pred=y0_pred,
+        y1_pred=y1_pred,
+        y_factual=y_factual_te,
+        y_cfactual=y_cfactual_te,
+        treatment=T_te,
+    )
 
 
-# run all
-def run_all(draws=500, tune=500, n_trees=50, out_csv="bart_results.csv"):
+# Run all
+def run_all(
+    n_replicas: int = 10,
+    n_trees: int = 50,
+    draws: int = 500,
+    tune: int = 500,
+    out_csv: str = "bart_results.csv",
+) -> pd.DataFrame:
 
     print("\n" + "="*60)
     print(" BART on IHDP")
-    print(f" Trees      : {n_trees}")
-    print(f" MCMC draws : {draws}  tune: {tune}")
+    print(f" Replicas    : {n_replicas}")
+    print(f" Trees       : {n_trees}")
+    print(f" MCMC draws  : {draws}  tune: {tune}")
     print("="*60 + "\n")
 
-    data    = load_ihdp()
-    metrics = run_bart(data, n_trees=n_trees, draws=draws, tune=tune)
+    datasets = load_all_replicas()
+    datasets = datasets[:n_replicas]
+    all_results = []
+
+    for i, dataset in enumerate(datasets):
+        print(f"\n── Replica {i+1}/{n_replicas} ({dataset.path.name}) ──")
+        try:
+            metrics = run_bart_on_replica(
+                dataset,
+                n_trees=n_trees,
+                draws=draws,
+                tune=tune,
+                random_seed=42 + i,
+            )
+            row: dict[str, object] = {"replica": dataset.path.name, "status": "ok", **metrics}
+            print(f"  PEHE={metrics['pehe']:.4f}  "
+                  f"ATE_err={metrics['ate_error']:.4f}  "
+                  f"ATT_err={metrics['att_error']:.4f}  "
+                  f"Policy={metrics['policy_value']:.4f}  "
+                  f"CF_RMSE={metrics['cf_rmse']:.4f}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+            row = {
+                "replica": dataset.path.name, "status": f"error: {e}",
+                "pehe": np.nan, "ate_error": np.nan, "att_error": np.nan,
+                "policy_value": np.nan, "cf_rmse": np.nan,
+                "control_cf_rmse": np.nan, "treated_cf_rmse": np.nan,
+            }
+        all_results.append(row)
+
+    metric_cols = ["pehe", "ate_error", "att_error", "policy_value",
+                   "cf_rmse", "control_cf_rmse", "treated_cf_rmse"]
+
+    df = pd.DataFrame(all_results)
+    ok = df[df["status"] == "ok"][metric_cols]
+
+    # Append summary rows to CSV
+    mean_row: dict[str, object] = {"replica": "MEAN", "status": ""}
+    std_row: dict[str, object] = {"replica": "STD", "status": ""}
+    median_row: dict[str, object] = {"replica": "MEDIAN", "status": ""}
+    for col in metric_cols:
+        mean_row[col] = round(float(ok[col].mean()), 4)
+        std_row[col] = round(float(ok[col].std()), 4)
+        median_row[col] = round(float(ok[col].median()), 4)
+
+    df_out = pd.concat([df, pd.DataFrame([mean_row, std_row, median_row])], ignore_index=True)
+    df_out.to_csv(out_csv, index=False)
+    print(f"\nResults saved to: {out_csv}")
 
     print("\n" + "="*60)
-    print(" BART RESULTS")
+    print(" BART RESULTS — across replicas")
     print("="*60)
-    for k, v in metrics.items():
-        print(f"  {k.upper().replace('_', ' '):<20} {v:.4f}")
+    for col in metric_cols:
+        m = ok[col].mean()
+        s = ok[col].std()
+        med = ok[col].median()
+        print(f"  {col.upper().replace('_', ' '):<22} mean={m:.4f}  std={s:.4f}  median={med:.4f}")
     print("="*60)
     print("\n  Literature reference (Hill 2011): PEHE ≈ 2.1")
 
-    df = pd.DataFrame([metrics])
-    df.to_csv(out_csv, index=False)
-    print(f"\nResults saved to: {out_csv}")
-
-    return metrics
+    return df
 
 
-# main
+# Main
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="BART on IHDP")
-    parser.add_argument("--test",  action="store_true")
-    parser.add_argument("--trees", type=int, default=200)
-    parser.add_argument("--draws", type=int, default=1000)
-    parser.add_argument("--tune",  type=int, default=1000)
+    parser.add_argument("--test", action="store_true")
+    parser.add_argument("--trees", type=int, default=50)
+    parser.add_argument("--draws", type=int, default=500)
+    parser.add_argument("--tune", type=int, default=500)
+    parser.add_argument("--n", type=int, default=10)
     args = parser.parse_args()
 
     if args.test:
-        print("TEST MODE: reduced MCMC")
-        run_all(draws=200, tune=200, n_trees=20, out_csv="bart_results_test.csv")
+        print("TEST MODE: 1 replica, reduced MCMC")
+        run_all(n_replicas=1, draws=200, tune=200, n_trees=20,
+                out_csv="bart_results_test.csv")
     else:
-        run_all(draws=args.draws, tune=args.tune, n_trees=args.trees)
+        run_all(
+            n_replicas=args.n,
+            draws=args.draws,
+            tune=args.tune,
+            n_trees=args.trees,
+        )
