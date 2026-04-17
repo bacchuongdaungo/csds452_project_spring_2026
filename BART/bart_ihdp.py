@@ -16,12 +16,11 @@ CEVAE_BASE = (
     "https://raw.githubusercontent.com/AMLab-Amsterdam/CEVAE/"
     "9081f863e24ce21bd34c8d6a41bf0edc7d1b65dd/datasets/IHDP"
 )
+DATA_DIR = Path("../data/ihdp_dataset/csv")
 
-# DATA_DIR = Path("../experiments/data/ihdp_datasets/csv")
-
-DATA_DIR = Path("../experiments/knn_counterfactual/noisy/both_per_replication_std_0p10_drop5/datasets")
-# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/drop_global_5cols/datasets")
-# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/gaussian_continuous_std_0p10/ihdp_dataset/csv")
+# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/gaussianSTD_test")
+# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/...")
+# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/...")
 
 @dataclass(frozen=True)
 class IHDPDataset:
@@ -42,18 +41,6 @@ class IHDPDataset:
         return np.where(self.treatment == 1, self.y_factual, self.y_cfactual)
 
 
-def download_replicas(data_dir: Path = DATA_DIR) -> None:
-    import urllib.request
-    data_dir.mkdir(parents=True, exist_ok=True)
-    for i in range(1, 11):
-        dest = data_dir / f"ihdp_npci_{i}.csv"
-        if dest.exists():
-            continue
-        url = f"{CEVAE_BASE}/csv/ihdp_npci_{i}.csv"
-        print(f"  Downloading ihdp_npci_{i}.csv ...")
-        urllib.request.urlretrieve(url, dest)
-
-
 def load_replica(path: Path) -> IHDPDataset:
     data = np.loadtxt(path, delimiter=",", dtype=float)
     if data.ndim != 2 or data.shape[1] < 6:
@@ -70,11 +57,11 @@ def load_replica(path: Path) -> IHDPDataset:
 
 
 def load_all_replicas(data_dir: Path = DATA_DIR) -> list[IHDPDataset]:
-    print("Checking IHDP replica CSVs...")
-    download_replicas(data_dir)
-    paths = sorted(data_dir.glob("ihdp_npci_*.csv"))
+    paths = sorted(data_dir.glob("*.csv"))
+    if not paths:
+        raise FileNotFoundError(f"No ihdp_npci_*.csv files found in {data_dir}")
     datasets = [load_replica(p) for p in paths]
-    print(f"Loaded {len(datasets)} replicas — "
+    print(f"Loaded {len(datasets)} replicas from {data_dir} — "
           f"{datasets[0].x.shape[0]} units, {datasets[0].x.shape[1]} covariates each")
     return datasets
 
