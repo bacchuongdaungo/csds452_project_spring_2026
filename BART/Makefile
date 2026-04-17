@@ -10,8 +10,7 @@ test:
 	conda run --no-capture-output -n $(ENV) python3 bart_ihdp.py --test
 
 run:
-    conda run --no-capture-output -n $(ENV) python3 bart_ihdp.py \
-        --trees 200 --draws 1000 --tune 1000 --alpha 0.87 --beta 1.92
+	conda run --no-capture-output -n $(ENV) python3 bart_ihdp.py --trees 200 --draws 1000 --tune 1000 --alpha 0.87 --beta 1.92
 
 tune:
 	conda run --no-capture-output -n bart_ihdp python3 bart_tune.py

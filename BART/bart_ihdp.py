@@ -19,10 +19,10 @@ CEVAE_BASE = (
     "9081f863e24ce21bd34c8d6a41bf0edc7d1b65dd/datasets/IHDP"
 )
 
-# DATA_DIR = Path("../data/ihdp_dataset/csv")
+DATA_DIR = Path("../data/ihdp_dataset/csv")
 
 # DATA_DIR = Path("../experiments/knn_counterfactual/noisy/gaussianSTD_test")
-DATA_DIR = Path("../experiments/knn_counterfactual/noisy/drop_3_rep")
+# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/drop_3_rep")
 # DATA_DIR = Path("../experiments/knn_counterfactual/noisy/both_noise")
 
 @dataclass(frozen=True)
