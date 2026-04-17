@@ -346,9 +346,8 @@ def main() -> None:
     configure_local_temp_dir()
     args = parse_args()
     noisy_root = PROJECT_ROOT / "experiments" / "knn_counterfactual" / "noisy"
-    '''
-    print(Forest Runs)
-    print("Running normal (non-noisy))
+    print("Forest Runs")
+    print("Running normal (non-noisy)")
     run_all( #normmal
         data_dir=args.data_dir,
         n_replicas=args.n,
@@ -381,7 +380,7 @@ def main() -> None:
         max_depth=args.max_depth,
         out_csv= FOREST_DIR / "forest_drop.csv",
     )
-    '''
+    
     print("Noisy both")
     run_all( # Noisy both
         data_dir= noisy_root / "both_per_replication_std_0p10_drop5" / "datasets",
