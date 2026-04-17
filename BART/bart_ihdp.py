@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+import pymc as pm
+import pymc_bart as pmb
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -149,8 +151,6 @@ def run_bart_on_replica(
     tune: int = 500,
     random_seed: int = 42,
 ) -> dict[str, float]:
-    import pymc as pm
-    import pymc_bart as pmb
 
     X = dataset.x
     T = dataset.treatment.astype(float)
