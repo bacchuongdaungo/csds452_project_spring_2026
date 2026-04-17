@@ -152,10 +152,11 @@ def fit_causal_model(
 ):
   
 
-    model_y = build_base_model(random_state, 200, 5, None) # type: ignore
+    model_y = build_base_model(random_state, 100, 3, max_depth=5) # type: ignore
     model_t = RandomForestClassifier(
-        n_estimators=200,
-        min_samples_leaf=5,
+        n_estimators=100,
+        min_samples_leaf=3,
+        max_depth=5,
         random_state=random_state,
         n_jobs=1,
     )
@@ -346,7 +347,6 @@ def main() -> None:
     configure_local_temp_dir()
     args = parse_args()
     noisy_root = PROJECT_ROOT / "experiments" / "knn_counterfactual" / "noisy"
-    '''
     print("Forest Runs")
     print("Running normal (non-noisy)")
     run_all( #normmal
@@ -359,40 +359,6 @@ def main() -> None:
         out_csv=args.out,
     )
     
-    
-    print("Running noisy variants")
-    print("Noisy Gaussian")
-    run_all( # Noisy guassian
-        data_dir= noisy_root / "gaussian_continuous_std_0p10" / "datasets",
-        n_replicas=args.n,
-        test_size=args.test_size,
-        n_estimators=args.trees,
-        min_samples_leaf=args.min_leaf,
-        max_depth=args.max_depth,
-        out_csv= FOREST_DIR / "forest_gaussian.csv",
-    )
-    print("Noisy drop")
-    run_all( # Noisy drop
-        data_dir= noisy_root / "drop_global_5cols" / "datasets",
-        n_replicas=args.n,
-        test_size=args.test_size,
-        n_estimators=args.trees,
-        min_samples_leaf=args.min_leaf,
-        max_depth=args.max_depth,
-        out_csv= FOREST_DIR / "forest_drop.csv",
-    )
-    
-    print("Noisy both")
-    run_all( # Noisy both
-        data_dir= noisy_root / "both_per_replication_std_0p10_drop5" / "datasets",
-        n_replicas=args.n,
-        test_size=args.test_size,
-        n_estimators=args.trees,
-        min_samples_leaf=args.min_leaf,
-        max_depth=args.max_depth,
-        out_csv= FOREST_DIR / "forest_both.csv",
-        )
-        '''
     print("Repeat drop")
     run_all( # Noisy drop
         data_dir= noisy_root / "drop_3_rep",
@@ -404,7 +370,6 @@ def main() -> None:
         out_csv= FOREST_DIR / "forest_drop_repeat.csv",
     )
     print("gaussian repeat")
-
     run_all( # Noisy guassian
         data_dir= noisy_root / "gaussianSTD_test",
         n_replicas=args.n,
@@ -413,6 +378,16 @@ def main() -> None:
         min_samples_leaf=args.min_leaf,
         max_depth=args.max_depth,
         out_csv= FOREST_DIR / "forest_gaussianSTD.csv",)
+    print("both")
+    run_all( # Noisy both
+        data_dir= noisy_root / "both_noise" / "datasets",
+        n_replicas=args.n,
+        test_size=args.test_size,
+        n_estimators=args.trees,
+        min_samples_leaf=args.min_leaf,
+        max_depth=args.max_depth,
+        out_csv= FOREST_DIR / "forest_both.csv",
+        )
     
     
 

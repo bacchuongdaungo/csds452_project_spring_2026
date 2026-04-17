@@ -1,0 +1,8 @@
+{
+  "n_trees": 300,
+  "alpha": 0.9732,
+  "beta": 2.6168,
+  "pehe": 0.4809,
+  "tuned_on": "../data/ihdp_dataset/csv/ihdp_npci_1.csv",
+  "n_trials": 30
+}
