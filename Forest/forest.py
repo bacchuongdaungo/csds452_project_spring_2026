@@ -346,6 +346,7 @@ def main() -> None:
     configure_local_temp_dir()
     args = parse_args()
     noisy_root = PROJECT_ROOT / "experiments" / "knn_counterfactual" / "noisy"
+    '''
     print("Forest Runs")
     print("Running normal (non-noisy)")
     run_all( #normmal
@@ -391,7 +392,29 @@ def main() -> None:
         max_depth=args.max_depth,
         out_csv= FOREST_DIR / "forest_both.csv",
         )
+        '''
+    print("Repeat drop")
+    run_all( # Noisy drop
+        data_dir= noisy_root / "drop_3_rep",
+        n_replicas=args.n,
+        test_size=args.test_size,
+        n_estimators=args.trees,
+        min_samples_leaf=args.min_leaf,
+        max_depth=args.max_depth,
+        out_csv= FOREST_DIR / "forest_drop_repeat.csv",
+    )
+    print("gaussian repeat")
 
+    run_all( # Noisy guassian
+        data_dir= noisy_root / "gaussianSTD_test",
+        n_replicas=args.n,
+        test_size=args.test_size,
+        n_estimators=args.trees,
+        min_samples_leaf=args.min_leaf,
+        max_depth=args.max_depth,
+        out_csv= FOREST_DIR / "forest_gaussianSTD.csv",)
+    
+    
 
 
 if __name__ == "__main__":
