@@ -10,14 +10,15 @@ noisy_root = PROJECT_ROOT / "experiments" / "knn_counterfactual" / "noisy"
 data = np.loadtxt(path, delimiter=",")
 x = data[:, 5:]
 
-columns = [
+base_columns = [
     "treatment",
     "y_factual",
     "y_cfactual",
     "mu0",
     "mu1",
-    *[f"x{i}" for i in range(1, x.shape[1] + 1)],
 ]
+feature_columns = [f"x{i}" for i in range(1, x.shape[1] + 1)]
+columns = [*base_columns, *feature_columns]
 
 noisy_root.mkdir(parents=True, exist_ok=True)
 
@@ -31,9 +32,9 @@ def pretty_float(value: float) -> str:
     return np.format_float_positional(value, trim="-")
 
 
-def write_csv(data_array: np.ndarray, output_path) -> None:
+def write_csv(data_array: np.ndarray, output_path, csv_columns=None) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    df = pd.DataFrame(data_array, columns=columns)
+    df = pd.DataFrame(data_array, columns=csv_columns or columns)
     df = df.map(pretty_float)
     df.to_csv(output_path, index=False)
 
@@ -52,7 +53,6 @@ for i in range(5):
     write_csv(data_noisy, output_path)
 '''
 
-data_noisy_drop = data.copy()
 drop_rng = np.random.default_rng(42)
 all_feature_indices = np.arange(x.shape[1])
 dropped_columns: list[int] = []
@@ -65,7 +65,16 @@ for _ in range(5):
     )
     new_columns = np.sort(drop_rng.choice(remaining_columns, size=3, replace=False)).tolist()
     dropped_columns.extend(new_columns)
-    data_noisy_drop[:, 5 + np.array(new_columns, dtype=int)] = np.nan
     total_drop_columns = len(dropped_columns)
+    keep_x_columns = np.setdiff1d(
+        all_feature_indices,
+        np.array(dropped_columns, dtype=int),
+        assume_unique=False,
+    )
+    reduced_data = np.concatenate(
+        [data[:, :5], data[:, 5:][:, keep_x_columns]],
+        axis=1,
+    )
+    reduced_columns = [*base_columns, *[feature_columns[index] for index in keep_x_columns]]
     output_path = noisy_root / "drop_3_rep" / f"ihdp_npci_1_noisy_drop_{total_drop_columns}.csv"
-    write_csv(data_noisy_drop, output_path)
+    write_csv(reduced_data, output_path, csv_columns=reduced_columns)

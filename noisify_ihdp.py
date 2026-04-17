@@ -259,9 +259,12 @@ def apply_feature_drop(
 
     if drop_scope == "global":
         # Global drop keeps the same observed covariate space for the full benchmark run.
-        dropped_columns = np.sort(rng.choice(n_features, size=num_drop_columns, replace=False)).tolist()
+        dropped_columns = np.sort(
+            rng.choice(n_features, size=num_drop_columns, replace=False)
+        ).tolist()
         drop_mask[:, dropped_columns] = True
-        x_dropped[:, :, dropped_columns] = drop_value
+        keep_columns = np.setdiff1d(np.arange(n_features), dropped_columns)
+        x_dropped = x_dropped[:, :, keep_columns]
         return x_dropped, drop_mask, dropped_columns
 
     per_replication_columns: list[list[int]] = []
