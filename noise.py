@@ -49,7 +49,7 @@ for i in range(5):
         gaussian_mean=0.0,
         rng=np.random.default_rng(42),
     )
-    output_path = noisy_root / f"ihdp_npci_1_noisy_std_{std_label}.csv"
+    output_path = noisy_root / "gaussianSTD_test" / f"ihdp_npci_1_noisy_std_{std_label}.csv"
     write_csv(data_noisy, output_path)
 
 '''
