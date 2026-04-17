@@ -16,10 +16,10 @@ CEVAE_BASE = (
     "https://raw.githubusercontent.com/AMLab-Amsterdam/CEVAE/"
     "9081f863e24ce21bd34c8d6a41bf0edc7d1b65dd/datasets/IHDP"
 )
-DATA_DIR = Path("../data/ihdp_dataset/csv")
+# DATA_DIR = Path("../data/ihdp_dataset/csv")
 
 # DATA_DIR = Path("../experiments/knn_counterfactual/noisy/gaussianSTD_test")
-# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/...")
+DATA_DIR = Path("../experiments/knn_counterfactual/noisy/drop_3_rep")
 # DATA_DIR = Path("../experiments/knn_counterfactual/noisy/...")
 
 @dataclass(frozen=True)
@@ -42,22 +42,22 @@ class IHDPDataset:
 
 
 def load_replica(path: Path) -> IHDPDataset:
-    data = np.loadtxt(path, delimiter=",", dtype=float)
-    if data.ndim != 2 or data.shape[1] < 6:
-        raise ValueError(f"Unexpected shape {data.shape} in {path}")
-    return IHDPDataset(
-        path=path,
-        treatment=data[:, 0].astype(int),
-        y_factual=data[:, 1],
-        y_cfactual=data[:, 2],
-        mu0=data[:, 3],
-        mu1=data[:, 4],
-        x=data[:, 5:],
-    )
+    df = pd.read_csv(path)
+    df.columns = [c.lower().strip() for c in df.columns]
+    t   = df["treatment"].to_numpy().astype(int)
+    yf  = df["y_factual"].to_numpy().astype(float)
+    ycf = df["y_cfactual"].to_numpy().astype(float)
+    mu0 = df["mu0"].to_numpy().astype(float)
+    mu1 = df["mu1"].to_numpy().astype(float)
+    meta = {"treatment", "y_factual", "y_cfactual", "mu0", "mu1"}
+    x_cols = [c for c in df.columns if c not in meta]
+    x = df[x_cols].to_numpy().astype(float)
+    return IHDPDataset(path=path, treatment=t, y_factual=yf,
+                       y_cfactual=ycf, mu0=mu0, mu1=mu1, x=x)
 
 
 def load_all_replicas(data_dir: Path = DATA_DIR) -> list[IHDPDataset]:
-    paths = sorted(data_dir.glob("*.csv"))
+    paths = sorted(data_dir.glob("ihdp_npci_*.csv"))
     if not paths:
         raise FileNotFoundError(f"No ihdp_npci_*.csv files found in {data_dir}")
     datasets = [load_replica(p) for p in paths]
