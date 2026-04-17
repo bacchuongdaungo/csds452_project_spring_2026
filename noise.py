@@ -19,7 +19,7 @@ def pretty_float(value: float) -> str:
     return np.format_float_positional(value, trim="-")
 
 for i in range(5):
-    std = i * 0.2
+    std = (i+1) * 0.2
     std_label = f"{std:.1f}"
     data_noisy = data.copy()
     data_noisy[:, 5:] = apply_gaussian_noise(
