@@ -1,0 +1,14 @@
+replica,status,backend,pehe,ate_error,att_error,policy_value,cf_rmse,control_cf_rmse,treated_cf_rmse
+ihdp_npci_1.csv,ok,econml_causal_forest,0.5816,0.0332,0.193,0.9867,1.1697,1.1094,1.4025
+ihdp_npci_10.csv,ok,econml_causal_forest,5.8164,0.3441,0.6432,0.82,2.1015,1.0578,4.334
+ihdp_npci_2.csv,ok,econml_causal_forest,0.5036,0.0473,0.0994,1.0,1.2396,1.2403,1.2364
+ihdp_npci_3.csv,ok,econml_causal_forest,0.5128,0.0968,0.1379,0.9933,1.106,1.0621,1.2799
+ihdp_npci_4.csv,ok,econml_causal_forest,1.2819,0.3688,0.2446,0.98,1.2326,1.1355,1.5878
+ihdp_npci_5.csv,ok,econml_causal_forest,2.4515,0.1304,0.5968,0.92,1.876,1.2686,3.4411
+ihdp_npci_6.csv,ok,econml_causal_forest,0.3962,0.0064,0.029,1.0,1.1148,1.0588,1.3316
+ihdp_npci_7.csv,ok,econml_causal_forest,0.2853,0.046,0.0554,1.0,1.0928,1.0751,1.1669
+ihdp_npci_8.csv,ok,econml_causal_forest,1.1227,0.1749,0.1844,0.9667,1.3741,1.2665,1.7682
+ihdp_npci_9.csv,ok,econml_causal_forest,16.7067,4.2853,0.9529,0.84,8.1136,1.4096,18.5475
+MEAN,,,2.9659,0.5533,0.3137,0.9507,2.0421,1.1684,3.6096
+STD,,,5.1098,1.3174,0.3088,0.0681,2.1612,0.121,5.3568
+MEDIAN,,,0.8521,0.1136,0.1887,0.9833,1.2361,1.1224,1.4952

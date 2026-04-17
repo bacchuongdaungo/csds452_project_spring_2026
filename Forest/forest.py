@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 FOREST_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = FOREST_DIR.parent
-DEFAULT_DATA_DIR = PROJECT_ROOT / "BART" / "data" / "ihdp_dataset" / "csv"
+DEFAULT_DATA_DIR = PROJECT_ROOT / "data" / "ihdp_dataset" / "csv"
 KNN_COUNTERFACTUAL_PATH = PROJECT_ROOT / "knn_counterfactual.py"
 
 
@@ -59,7 +59,7 @@ def load_all_replicas(data_dir: Path) -> list[IHDPDataset]:
 
     datasets = [load_replica(path) for path in paths]
     print(
-        f"Loaded {len(datasets)} IHDP replicas from data/idhp_dataset "
+        f"Loaded {len(datasets)} IHDP replicas from data/ihdp_dataset "
         f"({datasets[0].x.shape[0]} rows, {datasets[0].x.shape[1]} covariates each)."
     )
     return datasets
@@ -345,8 +345,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     configure_local_temp_dir()
     args = parse_args()
-
-    run_all(
+    noisy_root = PROJECT_ROOT / "experiments" / "knn_counterfactual" / "noisy"
+    '''
+    print(Forest Runs)
+    print("Running normal (non-noisy))
+    run_all( #normmal
         data_dir=args.data_dir,
         n_replicas=args.n,
         test_size=args.test_size,
@@ -355,6 +358,41 @@ def main() -> None:
         max_depth=args.max_depth,
         out_csv=args.out,
     )
+    
+    
+    print("Running noisy variants")
+    print("Noisy Gaussian")
+    run_all( # Noisy guassian
+        data_dir= noisy_root / "gaussian_continuous_std_0p10" / "datasets",
+        n_replicas=args.n,
+        test_size=args.test_size,
+        n_estimators=args.trees,
+        min_samples_leaf=args.min_leaf,
+        max_depth=args.max_depth,
+        out_csv= FOREST_DIR / "forest_gaussian.csv",
+    )
+    print("Noisy drop")
+    run_all( # Noisy drop
+        data_dir= noisy_root / "drop_global_5cols" / "datasets",
+        n_replicas=args.n,
+        test_size=args.test_size,
+        n_estimators=args.trees,
+        min_samples_leaf=args.min_leaf,
+        max_depth=args.max_depth,
+        out_csv= FOREST_DIR / "forest_drop.csv",
+    )
+    '''
+    print("Noisy both")
+    run_all( # Noisy both
+        data_dir= noisy_root / "both_per_replication_std_0p10_drop5" / "datasets",
+        n_replicas=args.n,
+        test_size=args.test_size,
+        n_estimators=args.trees,
+        min_samples_leaf=args.min_leaf,
+        max_depth=args.max_depth,
+        out_csv= FOREST_DIR / "forest_both.csv",
+        )
+
 
 
 if __name__ == "__main__":
