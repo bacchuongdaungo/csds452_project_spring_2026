@@ -1,0 +1,8 @@
+{
+  "n_estimators": 100,
+  "min_samples_leaf": 3,
+  "max_depth": 5,
+  "pehe": 0.6802,
+  "tuned_on": "C:\\Users\\jthub\\Dropbox\\My PC (DESKTOP-BBT6CUT)\\Downloads\\Csualioty\\csds452_project_spring_2026\\data\\ihdp_dataset\\csv\\ihdp_npci_1.csv",
+  "n_trials": 30
+}
