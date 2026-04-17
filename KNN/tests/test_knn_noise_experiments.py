@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from csds452_project_spring_2026.run_knn_noise_experiments import (
+from csds452_project_spring_2026.KNN.run_knn_noise_experiments import (
     NoiseExperimentSpec,
     apply_noise_experiment,
     run_experiment_suite,
@@ -35,11 +35,11 @@ class KNNNoiseExperimentTests(unittest.TestCase):
             num_drop_columns=2,
         )
         rng = np.random.default_rng(1)
-        noisy = apply_noise_experiment(data, spec, rng, dropped_columns=[0, 1])
+        noisy = apply_noise_experiment(data, spec, rng)
 
         np.testing.assert_allclose(noisy[:, :5], data[:, :5])
-        np.testing.assert_allclose(noisy[:, 5:7], 0.0)
-        self.assertFalse(np.array_equal(noisy[:, 7:11], data[:, 7:11]))
+        self.assertEqual(noisy.shape[1], data.shape[1] - 2)
+        self.assertFalse(np.array_equal(noisy[:, 5:9], data[:, 5:9]))
 
     def test_run_experiment_suite_creates_original_and_noisy_outputs(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -67,7 +67,7 @@ class KNNNoiseExperimentTests(unittest.TestCase):
                 (
                     output_dir
                     / "noisy"
-                    / "drop_global_5cols"
+                    / "drop_5cols"
                     / "datasets"
                     / "ihdp_npci_1.csv"
                 ).exists()

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 
-from csds452_project_spring_2026.knn_counterfactual import (
+from csds452_project_spring_2026.KNN.knn_counterfactual import (
     IHDPDataset,
     estimate_counterfactuals,
     iter_replica_paths,

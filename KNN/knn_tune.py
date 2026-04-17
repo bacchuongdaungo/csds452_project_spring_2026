@@ -18,14 +18,14 @@ warnings.filterwarnings("ignore")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 HERE      = Path(__file__).resolve().parent
-DATA_DIR  = HERE.parent / "data" / "ihdp_dataset" / "csv"
+DATA_DIR  = HERE / "data" / "ihdp_dataset" / "csv"
 N_TRIALS  = 30
 OUT_JSON  = HERE / "knn_best_params.json"
 
 # Add project root to path so knn_counterfactual imports work
 sys.path.insert(0, str(HERE.parent))
 
-from knn_counterfactual import (  # type: ignore
+from csds452_project_spring_2026.KNN.knn_counterfactual import (  # type: ignore
     load_ihdp_replica,
     estimate_counterfactuals,
 )
@@ -59,9 +59,9 @@ def tune():
             scale=scale,
             weighted=weighted,
         )
-        print(f"  Trial {trial.number+1}/{N_TRIALS} — "
+        print(f"  Trial {trial.number+1}/{N_TRIALS} - "
               f"k={k} metric={metric} weighted={weighted} scale={scale} "
-              f"→ PEHE={result.pehe:.4f}")
+              f"-> PEHE={result.pehe:.4f}")
         return result.pehe
 
     study = optuna.create_study(direction="minimize",
