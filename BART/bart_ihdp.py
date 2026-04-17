@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+import pymc as pm
+import pymc_bart as pmb
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -16,11 +18,12 @@ CEVAE_BASE = (
     "https://raw.githubusercontent.com/AMLab-Amsterdam/CEVAE/"
     "9081f863e24ce21bd34c8d6a41bf0edc7d1b65dd/datasets/IHDP"
 )
+
 # DATA_DIR = Path("../data/ihdp_dataset/csv")
 
 # DATA_DIR = Path("../experiments/knn_counterfactual/noisy/gaussianSTD_test")
 DATA_DIR = Path("../experiments/knn_counterfactual/noisy/drop_3_rep")
-# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/...")
+# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/both_noise")
 
 @dataclass(frozen=True)
 class IHDPDataset:
@@ -42,18 +45,42 @@ class IHDPDataset:
 
 
 def load_replica(path: Path) -> IHDPDataset:
-    df = pd.read_csv(path)
-    df.columns = [c.lower().strip() for c in df.columns]
-    t   = df["treatment"].to_numpy().astype(int)
-    yf  = df["y_factual"].to_numpy().astype(float)
-    ycf = df["y_cfactual"].to_numpy().astype(float)
-    mu0 = df["mu0"].to_numpy().astype(float)
-    mu1 = df["mu1"].to_numpy().astype(float)
-    meta = {"treatment", "y_factual", "y_cfactual", "mu0", "mu1"}
-    x_cols = [c for c in df.columns if c not in meta]
-    x = df[x_cols].to_numpy().astype(float)
+    # Detect if first row is a header or raw data
+    with open(path) as f:
+        first = f.readline().split(",")[0].strip()
+    has_header = not _is_float(first)
+
+    if has_header:
+        df = pd.read_csv(path)
+        df.columns = [c.lower().strip() for c in df.columns]
+        t   = df["treatment"].to_numpy().astype(int)
+        yf  = df["y_factual"].to_numpy().astype(float)
+        ycf = df["y_cfactual"].to_numpy().astype(float)
+        mu0 = df["mu0"].to_numpy().astype(float)
+        mu1 = df["mu1"].to_numpy().astype(float)
+        meta = {"treatment", "y_factual", "y_cfactual", "mu0", "mu1"}
+        x_cols = [c for c in df.columns if c not in meta]
+        x = df[x_cols].to_numpy().astype(float)
+    else:
+        # CEVAE format: no header, columns are t, yf, ycf, mu0, mu1, x1..x25
+        data = np.loadtxt(path, delimiter=",", dtype=float)
+        t   = data[:, 0].astype(int)
+        yf  = data[:, 1]
+        ycf = data[:, 2]
+        mu0 = data[:, 3]
+        mu1 = data[:, 4]
+        x   = data[:, 5:]
+
     return IHDPDataset(path=path, treatment=t, y_factual=yf,
                        y_cfactual=ycf, mu0=mu0, mu1=mu1, x=x)
+
+
+def _is_float(s: str) -> bool:
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
 
 def load_all_replicas(data_dir: Path = DATA_DIR) -> list[IHDPDataset]:
@@ -124,8 +151,6 @@ def run_bart_on_replica(
     tune: int = 500,
     random_seed: int = 42,
 ) -> dict[str, float]:
-    import pymc as pm
-    import pymc_bart as pmb
 
     X = dataset.x
     T = dataset.treatment.astype(float)

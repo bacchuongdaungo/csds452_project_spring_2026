@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from econml.dml import CausalForestDML
+from econml.dml import CausalForestDML # type: ignore
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
@@ -152,7 +152,7 @@ def fit_causal_model(
 ):
   
 
-    model_y = build_base_model(random_state, 200, 5, None)
+    model_y = build_base_model(random_state, 200, 5, None) # type: ignore
     model_t = RandomForestClassifier(
         n_estimators=200,
         min_samples_leaf=5,

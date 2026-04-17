@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 
-from csds452_project_spring_2026.knn_counterfactual import (
+from csds452_project_spring_2026.knn_counterfactual import ( # type: ignore
     DEFAULT_DATA_PATTERN,
     aggregate_result_records,
     evaluate_replica_paths,
