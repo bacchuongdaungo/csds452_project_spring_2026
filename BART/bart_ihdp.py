@@ -13,11 +13,13 @@ import pymc_bart as pmb
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
-DATA_DIR = Path("../data/ihdp_dataset/csv")
+# Data
+CEVAE_BASE = (
+    "https://raw.githubusercontent.com/AMLab-Amsterdam/CEVAE/"
+    "9081f863e24ce21bd34c8d6a41bf0edc7d1b65dd/datasets/IHDP"
+)
+DATA_DIR = Path("data/ihdp_dataset/csv")
 
-# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/gaussianSTD_test")
-# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/drop_3_rep")
-# DATA_DIR = Path("../experiments/knn_counterfactual/noisy/both_noise")
 
 @dataclass(frozen=True)
 class IHDPDataset:
@@ -144,8 +146,8 @@ def run_bart_on_replica(
     draws: int = 500,
     tune: int = 500,
     random_seed: int = 42,
-    alpha: float = 0.95,
-    beta: float = 2.0,
+    alpha: float = 0.95,   # ← add this
+    beta: float = 2.0,     # ← add this
 ) -> dict[str, float]:
 
     X = dataset.x
@@ -210,21 +212,25 @@ def run_bart_on_replica(
 
 # Run all
 def run_all(
+    data_dir: Path = DATA_DIR,
     n_replicas: int = 10,
     n_trees: int = 50,
     draws: int = 500,
     tune: int = 500,
+    alpha: float = 0.95,
+    beta: float = 2.0,
     out_csv: str = "bart_results.csv",
 ) -> pd.DataFrame:
 
     print("\n" + "="*60)
     print(" BART on IHDP")
+    print(f" Data        : {data_dir}")
     print(f" Replicas    : {n_replicas}")
     print(f" Trees       : {n_trees}")
     print(f" MCMC draws  : {draws}  tune: {tune}")
     print("="*60 + "\n")
 
-    datasets = load_all_replicas()
+    datasets = load_all_replicas(data_dir)
     datasets = datasets[:n_replicas]
     all_results = []
 
@@ -237,6 +243,8 @@ def run_all(
                 draws=draws,
                 tune=tune,
                 random_seed=42 + i,
+                alpha=alpha,
+                beta=beta,
             )
             row: dict[str, object] = {"replica": dataset.path.name, "status": "ok", **metrics}
             print(f"  PEHE={metrics['pehe']:.4f}  "
@@ -290,23 +298,35 @@ def run_all(
 # Main
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="BART on IHDP")
-    parser.add_argument("--test", action="store_true")
-    parser.add_argument("--trees", type=int, default=50)
-    parser.add_argument("--draws", type=int, default=500)
-    parser.add_argument("--tune", type=int, default=500)
-    parser.add_argument("--n", type=int, default=10)
+    parser.add_argument("--test",  action="store_true")
+    parser.add_argument("--trees", type=int,   default=50)
+    parser.add_argument("--draws", type=int,   default=500)
+    parser.add_argument("--tune",  type=int,   default=500)
+    parser.add_argument("--n",     type=int,   default=10)
     parser.add_argument("--alpha", type=float, default=0.95)
     parser.add_argument("--beta",  type=float, default=2.0)
     args = parser.parse_args()
 
+    named_paths = [
+        ("base",     Path("../data/ihdp_dataset/csv")),
+        ("gaussian", Path("../experiments/knn_counterfactual/noisy/gaussianSTD_test")),
+        ("drop",     Path("../experiments/knn_counterfactual/noisy/drop_3_rep")),
+        ("both",     Path("../experiments/knn_counterfactual/noisy/both_noise")),
+    ]
+
     if args.test:
         print("TEST MODE: 1 replica, reduced MCMC")
-        run_all(n_replicas=1, draws=200, tune=200, n_trees=20,
-                out_csv="bart_results_test.csv")
+        run_all(data_dir=named_paths[0][1], n_replicas=1, draws=200, tune=200,
+                n_trees=20, out_csv="bart_results_test.csv")
     else:
-        run_all(
-            n_replicas=args.n,
-            draws=args.draws,
-            tune=args.tune,
-            n_trees=args.trees,
-        )
+        for name, path in named_paths:
+            run_all(
+                data_dir=path,
+                n_replicas=args.n,
+                draws=args.draws,
+                tune=args.tune,
+                n_trees=args.trees,
+                alpha=args.alpha,
+                beta=args.beta,
+                out_csv=f"bart_results_{name}.csv",
+            )
