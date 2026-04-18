@@ -12,7 +12,7 @@ import numpy as np
 
 
 DEFAULT_DATA_PATTERN = "ihdp_npci_*.csv"
-DEFAULT_DATA_GLOB = f"data/ihdp_dataset/csv/{DEFAULT_DATA_PATTERN}"
+DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "ihdp_dataset" / "csv"
 
 
 @dataclass(frozen=True)
@@ -200,8 +200,7 @@ def iter_replica_paths(
     if input_dir:
         return sorted(Path(input_dir).glob(pattern))
 
-    base_dir = Path(__file__).resolve().parent
-    return sorted(base_dir.glob(DEFAULT_DATA_GLOB))
+    return sorted(DEFAULT_DATA_DIR.glob(pattern))
 
 
 def evaluate_replica_paths(

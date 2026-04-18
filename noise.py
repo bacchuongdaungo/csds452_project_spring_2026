@@ -39,20 +39,20 @@ def write_csv(data_array: np.ndarray, output_path, csv_columns=None) -> None:
     df.to_csv(output_path, index=False)
 
 
-for i in range(5):
-    std = (i + 1) * 0.2
-    std_label = f"{std:.1f}"
-    data_noisy = data.copy()
-    data_noisy[:, 5:] = apply_gaussian_noise(
-        x,
-        gaussian_std=std,
-        gaussian_mean=0.0,
-        rng=np.random.default_rng(42),
-    )
-    output_path = noisy_root / "gaussianSTD_test" / f"ihdp_npci_1_noisy_std_{std_label}.csv"
-    write_csv(data_noisy, output_path)
+# for i in range(5):
+#     std = (i + 1) * 0.2
+#     std_label = f"{std:.1f}"
+#     data_noisy = data.copy()
+#     data_noisy[:, 5:] = apply_gaussian_noise(
+#         x,
+#         gaussian_std=std,
+#         gaussian_mean=0.0,
+#         rng=np.random.default_rng(42),
+#     )
+#     output_path = noisy_root / "gaussianSTD_test" / f"ihdp_npci_1_noisy_std_{std_label}.csv"
+#     write_csv(data_noisy, output_path)
 
-'''
+
 drop_rng = np.random.default_rng(42)
 all_feature_indices = np.arange(x.shape[1])
 dropped_columns: list[int] = []
@@ -76,39 +76,39 @@ for _ in range(5):
         axis=1,
     )
     reduced_columns = [*base_columns, *[feature_columns[index] for index in keep_x_columns]]
-    output_path = noisy_root / "drop_3_rep" / f"ihdp_npci_1_noisy_drop_{total_drop_columns}.csv"
+    output_path = noisy_root / "drop_3_rep" / f"ihdp_npci_1_drop_{total_drop_columns}.csv"
     write_csv(reduced_data, output_path, csv_columns=reduced_columns)
-    '''
+    
 #Both noise and drop
-data_noisy = data.copy()
-data_noisy[:, 5:] = apply_gaussian_noise(
-        data_noisy[:, 5:],
-        gaussian_std=0.5,
-        gaussian_mean=0.0,
-        rng=np.random.default_rng(42),
-    )
-drop_rng = np.random.default_rng(42)
-all_feature_indices = np.arange(x.shape[1])
-dropped_columns: list[int] = []
+# data_noisy = data.copy()
+# data_noisy[:, 5:] = apply_gaussian_noise(
+#         data_noisy[:, 5:],
+#         gaussian_std=0.5,
+#         gaussian_mean=0.0,
+#         rng=np.random.default_rng(42),
+#     )
+# drop_rng = np.random.default_rng(42)
+# all_feature_indices = np.arange(x.shape[1])
+# dropped_columns: list[int] = []
 
-for _ in range(5):
-    remaining_columns = np.setdiff1d(
-        all_feature_indices,
-        np.array(dropped_columns, dtype=int),
-        assume_unique=False,
-    )
-    new_columns = np.sort(drop_rng.choice(remaining_columns, size=3, replace=False)).tolist()
-    dropped_columns.extend(new_columns)
-    total_drop_columns = len(dropped_columns)
-    keep_x_columns = np.setdiff1d(
-        all_feature_indices,
-        np.array(dropped_columns, dtype=int),
-        assume_unique=False,
-    )
-    reduced_data = np.concatenate(
-        [data[:, :5], data[:, 5:][:, keep_x_columns]],
-        axis=1,
-    )
-    reduced_columns = [*base_columns, *[feature_columns[index] for index in keep_x_columns]]
-    output_path = noisy_root / "both_noise" / f"ihdp_npci_1_noisy_drop_{total_drop_columns}.csv"
-    write_csv(reduced_data, output_path, csv_columns=reduced_columns)
+# for _ in range(5):
+#     remaining_columns = np.setdiff1d(
+#         all_feature_indices,
+#         np.array(dropped_columns, dtype=int),
+#         assume_unique=False,
+#     )
+#     new_columns = np.sort(drop_rng.choice(remaining_columns, size=3, replace=False)).tolist()
+#     dropped_columns.extend(new_columns)
+#     total_drop_columns = len(dropped_columns)
+#     keep_x_columns = np.setdiff1d(
+#         all_feature_indices,
+#         np.array(dropped_columns, dtype=int),
+#         assume_unique=False,
+#     )
+#     reduced_data = np.concatenate(
+#         [data[:, :5], data[:, 5:][:, keep_x_columns]],
+#         axis=1,
+#     )
+#     reduced_columns = [*base_columns, *[feature_columns[index] for index in keep_x_columns]]
+#     output_path = noisy_root / "both_noise" / f"ihdp_npci_1_noisy_drop_{total_drop_columns}.csv"
+#     write_csv(reduced_data, output_path, csv_columns=reduced_columns)

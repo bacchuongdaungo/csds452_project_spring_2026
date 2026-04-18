@@ -18,12 +18,14 @@ warnings.filterwarnings("ignore")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 HERE      = Path(__file__).resolve().parent
-DATA_DIR  = HERE / "data" / "ihdp_dataset" / "csv"
+PACKAGE_ROOT = HERE.parent
+PROJECT_ROOT = PACKAGE_ROOT.parent
+DATA_DIR  = PACKAGE_ROOT / "data" / "ihdp_dataset" / "csv"
 N_TRIALS  = 30
 OUT_JSON  = HERE / "knn_best_params.json"
 
-# Add project root to path so knn_counterfactual imports work
-sys.path.insert(0, str(HERE.parent))
+# Add repo root to path so package imports work when running this file directly.
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from csds452_project_spring_2026.KNN.knn_counterfactual import (  # type: ignore
     load_ihdp_replica,
