@@ -1,0 +1,20 @@
+{
+  "aggregate": {
+    "ate_abs_error": 0.026682667590774402,
+    "ate_hat": 4.042749563709113,
+    "ate_true": 4.016066896118338,
+    "control_counterfactual_rmse": 1.078700532434968,
+    "counterfactual_rmse": 1.1223150660864643,
+    "pehe": 1.0879339421503493,
+    "treated_counterfactual_rmse": 1.2955107490022806
+  },
+  "experiment": {
+    "input_dir": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\gaussianSTD_test",
+    "k": 18,
+    "metric": "euclidean",
+    "pattern": "ihdp_npci_1_noisy_std_*.csv",
+    "scale": false,
+    "weighted": true
+  },
+  "num_replicas": 5
+}

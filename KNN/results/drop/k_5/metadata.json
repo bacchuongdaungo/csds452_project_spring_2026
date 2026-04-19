@@ -1,0 +1,20 @@
+{
+  "aggregate": {
+    "ate_abs_error": 0.060165111186645956,
+    "ate_hat": 4.076232007304983,
+    "ate_true": 4.016066896118338,
+    "control_counterfactual_rmse": 1.1385898324016388,
+    "counterfactual_rmse": 1.1976236026246088,
+    "pehe": 1.1774663418776368,
+    "treated_counterfactual_rmse": 1.4248942151750916
+  },
+  "experiment": {
+    "input_dir": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\drop_3_rep",
+    "k": 5,
+    "metric": "euclidean",
+    "pattern": "ihdp_npci_1_drop_*.csv",
+    "scale": true,
+    "weighted": false
+  },
+  "num_replicas": 5
+}

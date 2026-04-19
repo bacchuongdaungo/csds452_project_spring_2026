@@ -1,0 +1,99 @@
+{
+  "metadata": {
+    "aggregate": {
+      "ate_abs_error": 0.01629209907700453,
+      "ate_hat": 4.032358995195343,
+      "ate_true": 4.016066896118338,
+      "control_counterfactual_rmse": 1.0887705953265678,
+      "counterfactual_rmse": 1.1417980408095114,
+      "pehe": 1.0937985204518959,
+      "treated_counterfactual_rmse": 1.3458788955395184
+    },
+    "experiment": {
+      "input_dir": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_noise",
+      "k": 18,
+      "metric": "euclidean",
+      "pattern": "ihdp_npci_1_noisy_drop_*.csv",
+      "scale": false,
+      "weighted": true
+    },
+    "num_replicas": 5
+  },
+  "replicas": [
+    {
+      "ate_abs_error": 0.021882490482303396,
+      "ate_hat": 4.0379493866006415,
+      "ate_true": 4.016066896118338,
+      "control_counterfactual_rmse": 1.0818612838620607,
+      "counterfactual_rmse": 1.122910747048971,
+      "dataset": "ihdp_npci_1_noisy_drop_12.csv",
+      "dataset_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_noise\\ihdp_npci_1_noisy_drop_12.csv",
+      "k": 18,
+      "metric": "euclidean",
+      "pehe": 1.0709176686968302,
+      "scaled": false,
+      "treated_counterfactual_rmse": 1.2871694743136748,
+      "weighted": true
+    },
+    {
+      "ate_abs_error": 0.018909758457919423,
+      "ate_hat": 4.0349766545762575,
+      "ate_true": 4.016066896118338,
+      "control_counterfactual_rmse": 1.1145553378337492,
+      "counterfactual_rmse": 1.2220830548368593,
+      "dataset": "ihdp_npci_1_noisy_drop_15.csv",
+      "dataset_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_noise\\ihdp_npci_1_noisy_drop_15.csv",
+      "k": 18,
+      "metric": "euclidean",
+      "pehe": 1.1520700110030124,
+      "scaled": false,
+      "treated_counterfactual_rmse": 1.6101225527462075,
+      "weighted": true
+    },
+    {
+      "ate_abs_error": 0.02004667204827104,
+      "ate_hat": 4.036113568166609,
+      "ate_true": 4.016066896118338,
+      "control_counterfactual_rmse": 1.0780266577804316,
+      "counterfactual_rmse": 1.1112947411441652,
+      "dataset": "ihdp_npci_1_noisy_drop_3.csv",
+      "dataset_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_noise\\ihdp_npci_1_noisy_drop_3.csv",
+      "k": 18,
+      "metric": "euclidean",
+      "pehe": 1.0779925946858189,
+      "scaled": false,
+      "treated_counterfactual_rmse": 1.2464194951182137,
+      "weighted": true
+    },
+    {
+      "ate_abs_error": 0.003035367731076377,
+      "ate_hat": 4.0191022638494145,
+      "ate_true": 4.016066896118338,
+      "control_counterfactual_rmse": 1.0805575309136661,
+      "counterfactual_rmse": 1.1217712741171626,
+      "dataset": "ihdp_npci_1_noisy_drop_6.csv",
+      "dataset_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_noise\\ihdp_npci_1_noisy_drop_6.csv",
+      "k": 18,
+      "metric": "euclidean",
+      "pehe": 1.0817190006743105,
+      "scaled": false,
+      "treated_counterfactual_rmse": 1.2866201275453566,
+      "weighted": true
+    },
+    {
+      "ate_abs_error": 0.01758620666545241,
+      "ate_hat": 4.0336531027837905,
+      "ate_true": 4.016066896118338,
+      "control_counterfactual_rmse": 1.0888521662429325,
+      "counterfactual_rmse": 1.1309303869003993,
+      "dataset": "ihdp_npci_1_noisy_drop_9.csv",
+      "dataset_path": "C:\\Users\\hieuv\\Code\\452_proj\\csds452_project_spring_2026\\experiments\\knn_counterfactual\\noisy\\both_noise\\ihdp_npci_1_noisy_drop_9.csv",
+      "k": 18,
+      "metric": "euclidean",
+      "pehe": 1.0862933271995068,
+      "scaled": false,
+      "treated_counterfactual_rmse": 1.2990628279741405,
+      "weighted": true
+    }
+  ]
+}

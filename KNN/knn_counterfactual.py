@@ -13,6 +13,50 @@ import numpy as np
 
 DEFAULT_DATA_PATTERN = "ihdp_npci_*.csv"
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "ihdp_dataset" / "csv"
+OUTPUT_DEFAULT_DIR = Path(__file__).resolve().parent / "results" / "original" / "k_5"
+OUTPUT_DEFAULT_DIR_TUNED = Path(__file__).resolve().parent / "results" / "original" / "k_18"
+
+GAUSSIAN_STD_PATTERN = "ihdp_npci_1_noisy_std_*.csv"
+GAUSSIAN_STD_DATA_DIR = Path(__file__).resolve().parent.parent / "experiments" / "knn_counterfactual" / "noisy" / "gaussianSTD_test"
+OUTPUT_GAUSSIAN_STD_DIR = Path(__file__).resolve().parent / "results" / "gaussianSTD" / "k_5"
+OUTPUT_GAUSSIAN_STD_DIR_TUNED = Path(__file__).resolve().parent / "results" / "gaussianSTD" / "k_18"
+
+DROP_PATTERN = "ihdp_npci_1_drop_*.csv"
+DROP_DATA_DIR = Path(__file__).resolve().parent.parent / "experiments" / "knn_counterfactual" / "noisy" / "drop_3_rep"
+OUTPUT_DROP_DIR = Path(__file__).resolve().parent / "results" / "drop" / "k_5"
+OUTPUT_DROP_DIR_TUNED = Path(__file__).resolve().parent / "results" / "drop" / "k_18"
+
+NOISY_DROP_PATTERN = "ihdp_npci_1_noisy_drop_*.csv"
+NOISY_DROP_DATA_DIR = Path(__file__).resolve().parent.parent / "experiments" / "knn_counterfactual" / "noisy" / "both_noise"
+OUTPUT_NOISY_DROP_DIR = Path(__file__).resolve().parent / "results" / "noisy_drop" / "k_5"
+OUTPUT_NOISY_DROP_DIR_TUNED = Path(__file__).resolve().parent / "results" / "noisy_drop" / "k_18"
+
+DATA_PATTERN_LIST = [
+    DEFAULT_DATA_PATTERN,
+    GAUSSIAN_STD_PATTERN,
+    DROP_PATTERN,
+    NOISY_DROP_PATTERN,
+]
+DATA_DIR_LIST = [
+    DEFAULT_DATA_DIR,
+    GAUSSIAN_STD_DATA_DIR,
+    DROP_DATA_DIR,
+    NOISY_DROP_DATA_DIR,
+]
+
+OUTPUT_DIR_LIST = [
+    OUTPUT_DEFAULT_DIR,
+    OUTPUT_GAUSSIAN_STD_DIR,
+    OUTPUT_DROP_DIR,
+    OUTPUT_NOISY_DROP_DIR,
+]
+
+OUTPUT_DIR_TUNED_LIST = [
+    OUTPUT_DEFAULT_DIR_TUNED,
+    OUTPUT_GAUSSIAN_STD_DIR_TUNED,
+    OUTPUT_DROP_DIR_TUNED,
+    OUTPUT_NOISY_DROP_DIR_TUNED,
+]
 
 
 @dataclass(frozen=True)
@@ -56,7 +100,10 @@ class KNNCounterfactualResult:
 
 def load_ihdp_replica(path: str | Path) -> IHDPDataset:
     csv_path = Path(path)
-    data = np.loadtxt(csv_path, delimiter=",", dtype=float)
+    try:
+        data = np.loadtxt(csv_path, delimiter=",", dtype=float)
+    except ValueError:
+        data = np.loadtxt(csv_path, delimiter=",", dtype=float, skiprows=1)
     if data.ndim != 2 or data.shape[1] < 6:
         raise ValueError(f"Expected IHDP matrix with >= 6 columns, got shape {data.shape}")
 
@@ -191,7 +238,7 @@ def rmse(y_pred: np.ndarray, y_true: np.ndarray) -> float:
 def iter_replica_paths(
     input_path: str | None = None,
     input_dir: str | Path | None = None,
-    pattern: str = DEFAULT_DATA_PATTERN,
+    pattern: str = DATA_PATTERN_LIST[0],
 ) -> list[Path]:
     if input_path and input_dir:
         raise ValueError("Provide only one of input_path or input_dir.")
@@ -414,34 +461,40 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = build_arg_parser().parse_args()
-    paths = iter_replica_paths(args.input, args.input_dir, args.pattern)
-    if not paths:
-        raise SystemExit("No IHDP replica CSVs found.")
+    # Iterate over corresponding patterns and directories
+    if args.k == 18:
+        output_dirs = OUTPUT_DIR_TUNED_LIST
+    else:
+        output_dirs = OUTPUT_DIR_LIST
 
-    results = evaluate_replica_paths(
-        paths=paths,
-        k=args.k,
-        metric=args.metric,
-        scale=not args.no_scale,
-        weighted=args.weighted,
-    )
-    summary = summarize_results(results)
-    print(summary)
-    if args.output_dir:
+    for pattern, data_dir, output_dir in zip(DATA_PATTERN_LIST, DATA_DIR_LIST, output_dirs):
+        print(f"\nEvaluating pattern: {pattern} in {data_dir}")
+        paths = iter_replica_paths(None, data_dir, pattern)
+        if not paths:
+            print("  -> No IHDP replica CSVs found. Skipping.")
+            continue
+
+        results = evaluate_replica_paths(
+            paths=paths,
+            k=args.k,
+            metric=args.metric,
+            scale=not args.no_scale,
+            weighted=args.weighted,
+        )
+        summary = summarize_results(results)
+        print(summary)
         save_results(
-            output_dir=args.output_dir,
+            output_dir=output_dir,
             results=results,
             extra_metadata={
-                "input_path": args.input,
-                "input_dir": args.input_dir,
-                "pattern": args.pattern,
+                "input_dir": str(data_dir),
+                "pattern": pattern,
                 "k": args.k,
                 "metric": args.metric,
                 "scale": not args.no_scale,
                 "weighted": args.weighted,
             },
         )
-
 
 if __name__ == "__main__":
     main()
