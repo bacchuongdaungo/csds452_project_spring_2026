@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 FOREST_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = FOREST_DIR.parent
 DEFAULT_DATA_DIR = PROJECT_ROOT / "data" / "ihdp_dataset" / "csv"
-KNN_COUNTERFACTUAL_PATH = PROJECT_ROOT / "knn_counterfactual.py"
+KNN_COUNTERFACTUAL_PATH = PROJECT_ROOT / "KNN" / "knn_counterfactual.py"
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,15 @@ class IHDPDataset:
 
 
 def load_replica(path: Path) -> IHDPDataset:
-    data = np.loadtxt(path, delimiter=",", dtype=float)
+    with open(path) as f:
+        first_cell = f.readline().strip().split(",")[0]
+    try:
+        float(first_cell)
+        skip = 0
+    except ValueError:
+        skip = 1
+
+    data = np.loadtxt(path, delimiter=",", dtype=float, skiprows=skip)
     if data.ndim != 2 or data.shape[1] < 6:
         raise ValueError(f"Unexpected shape {data.shape} in {path}")
 
@@ -51,7 +59,7 @@ def load_replica(path: Path) -> IHDPDataset:
 
 
 def load_all_replicas(data_dir: Path) -> list[IHDPDataset]:
-    paths = sorted(data_dir.glob("ihdp_npci_*.csv"))
+    paths = sorted(data_dir.glob("*.csv"))
     if not paths:
         raise FileNotFoundError(
             f"No IHDP replicas found in {data_dir}. Expected files like ihdp_npci_1.csv."
@@ -380,7 +388,7 @@ def main() -> None:
         out_csv= FOREST_DIR / "forest_gaussianSTD.csv",)
     print("both")
     run_all( # Noisy both
-        data_dir= noisy_root / "both_noise" / "datasets",
+        data_dir= noisy_root / "both_noise",
         n_replicas=args.n,
         test_size=args.test_size,
         n_estimators=args.trees,
