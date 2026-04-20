@@ -1,6 +1,8 @@
 import pandas as pd
 import plotly.graph_objects as go
 from pathlib import Path
+import re
+import numpy as np
 
 DIR = Path(__file__).resolve()
 PROJECT_ROOT = DIR.parent
@@ -13,41 +15,37 @@ df_Forest = pd.read_csv(_FOREST_DIR / "forest_results.csv")
 df_bart = pd.read_csv(_BART_DIR / "bart_results_base.csv")
 df_knn = pd.read_csv(_KNN_DIR / "results" / "original" / "k_18" / "metrics.csv")
 
-print("Forest columns:", df_Forest.columns)
-print("BART columns:", df_bart.columns)
-print("KNN columns:", df_knn.columns)
-
 def clean_df(df):
     df = df[~df["replica"].isin(["MEAN", "STD", "MEDIAN"])].copy()
     df["replica_id"] = df["replica"].str.extract(r'(\d+)').astype(int)
     return df.sort_values("replica_id")
-def clean_knn(df):
+def clean_knn_df(df, key):
     df = df.copy()
 
-    # Create replica_id (since none exists)
-    df["replica_id"] = range(1, len(df) + 1)
+    # normalize column names
+    df.columns = [c.lower().strip() for c in df.columns]
 
-    # Rename columns
-    df = df.rename(columns={
-        "ate_abs_error": "ate_error",
+    # KNN has no replica → create a stable index
+    match key:
+        case "original":
+            df["replica_id"] = range(1, len(df) + 1)
+        case "gaussianSTD":
+            df["replica"] = [0.2, 0.4, 0.6, 0.8, 1.0]
+        case "drop":
+            df["replica"] = [3,6,9,12,15]
+
+    # Map KNN-specific metrics into your standard schema
+    rename_map = {
         "counterfactual_rmse": "cf_rmse",
         "control_counterfactual_rmse": "control_cf_rmse",
-        "treated_counterfactual_rmse": "treated_cf_rmse"
-    })
+        "treated_counterfactual_rmse": "treated_cf_rmse",
+        "ate_abs_error": "ate_error"
+    }
 
-    # Add missing columns (set to NaN so Plotly skips them)
-    df["att_error"] = None
-    df["policy_value"] = None
+    df = df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
 
-    return df
-def plot (df_Forest, df_bart, df_knn):
-    df_Forest = clean_df(df_Forest)
-    df_bart = clean_df(df_bart)
-    df_knn = clean_knn(df_knn)
-
-
-    # Metrics to visualize
-    metrics = [
+    # Ensure missing expected columns exist (prevents KeyErrors in plotting)
+    required_cols = [
         "pehe",
         "ate_error",
         "att_error",
@@ -57,9 +55,93 @@ def plot (df_Forest, df_bart, df_knn):
         "treated_cf_rmse"
     ]
 
+    for col in required_cols:
+        if col not in df.columns:
+            df[col] = pd.NA  # safe placeholder for Plotly
 
-    # Build interactive figure
+    return df
+def clean_noise_df(df):
+    df = df.copy()
 
+    if "replica" in df.columns:
+        df = df[~df["replica"].isin(["MEAN", "STD", "MEDIAN"])]
+
+    # extract noise level
+    df["noise_std"] = (
+        df["replica"]
+        .str.replace(".csv", "", regex=False)
+        .str.split("std_")
+        .str[-1]
+        .astype(float)
+)
+
+    return df.sort_values("noise_std")
+
+def extract_drop(x):
+    return float(re.search(r"drop_(\d+)", x).group(1))
+
+def clean_drop_df(df):
+    df = df.copy()
+
+    df.columns = df.columns.str.strip().str.lower()
+
+    # remove summary rows
+    df = df[~df["replica"].isin(["MEAN", "STD", "MEDIAN"])]
+
+    # extract drop level
+    df["drop_level"] = df["replica"].apply(extract_drop)
+
+    return df.sort_values("drop_level")
+
+def plot (df_Forest, df_bart, df_knn, plotNum):
+
+    match plotNum:
+        case 1:
+            title_suffix = "Base"
+        case 2:
+            title_suffix = "Gaussian"
+        case 3:
+            title_suffix = "Drop"
+        case 4:
+            title_suffix = "Both"
+    df_Forest.to_latex(PROJECT_ROOT / "Latex_Tables" / f"forest_results_{title_suffix}.tex", index=False)
+    df_bart.to_latex(PROJECT_ROOT / "Latex_Tables" / f"bart_results_{title_suffix}.tex", index=False)
+    df_knn.to_latex(PROJECT_ROOT / "Latex_Tables" / f"knn_results_{title_suffix}.tex", index=False)
+    match plotNum:
+        case 1:
+            df_Forest = clean_df(df_Forest)
+            df_bart = clean_df(df_bart)
+            df_knn = clean_knn_df(df_knn, "original")
+            graph("replica_id", df_Forest, df_bart, df_knn)
+        case 2:
+            df_Forest = clean_noise_df(df_Forest)
+            df_bart = clean_noise_df(df_bart)
+            df_knn = clean_knn_df(df_knn, "gaussianSTD")
+            graph("noise_std", df_Forest, df_bart, df_knn)
+        case 3:
+            df_Forest = clean_drop_df(df_Forest)
+            df_bart = clean_drop_df(df_bart)
+            df_knn = clean_knn_df(df_knn, "drop")
+            graph("drop_level", df_Forest, df_bart, df_knn)
+        case 4:
+            df_Forest = clean_drop_df(df_Forest)
+            df_bart = clean_drop_df(df_bart)
+            df_knn = clean_knn_df(df_knn, "drop")
+            graph("drop_level", df_Forest, df_bart, df_knn)
+
+        
+
+def graph(xaxis, df_Forest, df_bart, df_knn):
+        # Metrics to visualize
+    metrics = [
+        "pehe",
+        "ate_error",
+        "att_error",
+        "policy_value",
+        "cf_rmse",
+        "control_cf_rmse",
+        "treated_cf_rmse"
+    ]
     fig = go.Figure()
 
     # Add traces for BOTH datasets
@@ -69,7 +151,7 @@ def plot (df_Forest, df_bart, df_knn):
         # Forest results
         fig.add_trace(
             go.Scatter(
-                x=df_Forest["replica_id"],
+                x=df_Forest[xaxis],
                 y=df_Forest[metric],
                 mode="lines+markers",
                 name=f"{metric} (mean)",
@@ -80,7 +162,7 @@ def plot (df_Forest, df_bart, df_knn):
         # add bart results
         fig.add_trace(
             go.Scatter(
-                x=df_bart["replica_id"],
+                x=df_bart[xaxis],
                 y=df_bart[metric],
                 mode="lines+markers",
                 name=f"{metric} (BART)",
@@ -90,7 +172,7 @@ def plot (df_Forest, df_bart, df_knn):
         )
         fig.add_trace(
             go.Scatter(
-                x=df_knn["replica_id"],
+                x=df_knn["replica"],
                 y=df_knn[metric],
                 mode="lines+markers",
                 name=f"{metric} (KNN)",
@@ -119,7 +201,7 @@ def plot (df_Forest, df_bart, df_knn):
             method="update",
             args=[
                 {"visible": visibility},
-                {"title": f"{metric} Across Replicas"}
+                {"title": f"{metric} Across Replicas"},
             ]
         ))
 
@@ -127,8 +209,8 @@ def plot (df_Forest, df_bart, df_knn):
     # Layout
     # =========================
     fig.update_layout(
-        title="Dynamic Forest Metrics Viewer",
-        xaxis_title="Replica ID",
+        title=f"Dynamic Forest Metrics Viewer - {xaxis}",
+        xaxis_title=xaxis.capitalize().split("_")[0] +" " + xaxis.capitalize().split("_")[1] if "_" in xaxis else xaxis.capitalize(),
         yaxis_title="Metric Value",
         updatemenus=[
             dict(
@@ -140,27 +222,27 @@ def plot (df_Forest, df_bart, df_knn):
     )
 
     fig.show()
-    fig.write_html("plots_saved/base_comparison.html")
+
 
 if __name__ == "__main__":
-    plotNum = 1 # is base 2 is noisy 3 is drop 4 is both
+    plotNum = 4 # is base 2 is noisy 3 is drop 4 is both
     if plotNum == 1:
         df_Forest = pd.read_csv(_FOREST_DIR / "forest_results.csv")
         df_bart = pd.read_csv(_BART_DIR / "bart_results_base.csv")
         df_knn = pd.read_csv(_KNN_DIR / "results" / "original" / "k_18" / "metrics.csv")
-        plot(df_Forest, df_bart, df_knn)
+        plot(df_Forest, df_bart, df_knn, plotNum)
     elif plotNum == 2:
         df_Forest = pd.read_csv(_FOREST_DIR / "forest_gaussianSTD.csv")
         df_bart = pd.read_csv(_BART_DIR / "bart_results_gaussian.csv")
         df_knn = pd.read_csv(_KNN_DIR / "results" / "gaussianSTD" / "k_18" / "metrics.csv")
-        plot(df_Forest, df_bart, df_knn)
+        plot(df_Forest, df_bart, df_knn, plotNum)
     elif plotNum == 3:
         df_Forest = pd.read_csv(_FOREST_DIR / "forest_drop_repeat.csv")
         df_bart = pd.read_csv(_BART_DIR / "bart_results_drop.csv")
         df_knn = pd.read_csv(_KNN_DIR / "results" / "drop" / "k_18" / "metrics.csv")
-        plot(df_Forest, df_bart, df_knn)
+        plot(df_Forest, df_bart, df_knn, plotNum)
     elif plotNum == 4:
         df_Forest = pd.read_csv(_FOREST_DIR / "forest_both.csv")
         df_bart = pd.read_csv(_BART_DIR / "bart_results_both.csv")
         df_knn = pd.read_csv(_KNN_DIR / "results" / "noisy_drop" / "k_18" / "metrics.csv")
-        plot(df_Forest, df_bart, df_knn)
+        plot(df_Forest, df_bart, df_knn, plotNum)
