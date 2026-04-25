@@ -366,7 +366,7 @@ def main() -> None:
         max_depth=args.max_depth,
         out_csv=args.out,
     )
-    
+    '''
     print("Repeat drop")
     run_all( # Noisy drop
         data_dir= noisy_root / "drop_3_rep",
@@ -377,6 +377,7 @@ def main() -> None:
         max_depth=args.max_depth,
         out_csv= FOREST_DIR / "forest_drop_repeat.csv",
     )
+    '''
     print("gaussian repeat")
     run_all( # Noisy guassian
         data_dir= noisy_root / "gaussianSTD_test",
@@ -387,6 +388,7 @@ def main() -> None:
         max_depth=args.max_depth,
         out_csv= FOREST_DIR / "forest_gaussianSTD.csv",)
     print("both")
+    '''
     run_all( # Noisy both
         data_dir= noisy_root / "both_noise",
         n_replicas=args.n,
@@ -396,7 +398,7 @@ def main() -> None:
         max_depth=args.max_depth,
         out_csv= FOREST_DIR / "forest_both.csv",
         )
-    
+    '''
     
 
 
