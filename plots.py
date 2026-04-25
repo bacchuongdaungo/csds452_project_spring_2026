@@ -13,7 +13,7 @@ _KNN_DIR = PROJECT_ROOT / "KNN"
 
 df_Forest = pd.read_csv(_FOREST_DIR / "forest_results.csv")
 df_bart = pd.read_csv(_BART_DIR / "bart_results_base.csv")
-df_knn = pd.read_csv(_KNN_DIR / "results" / "original" / "k_18" / "metrics.csv")
+df_knn = pd.read_csv(_KNN_DIR / "knn_results_base.csv")
 
 def clean_df(df):
     df = df[~df["replica"].isin(["MEAN", "STD", "MEDIAN"])].copy()
@@ -35,14 +35,14 @@ def clean_knn_df(df, key):
             df["replica"] = [3,6,9,12,15]
 
     # Map KNN-specific metrics into your standard schema
-    rename_map = {
-        "counterfactual_rmse": "cf_rmse",
-        "control_counterfactual_rmse": "control_cf_rmse",
-        "treated_counterfactual_rmse": "treated_cf_rmse",
-        "ate_abs_error": "ate_error"
-    }
+    # rename_map = {
+    #     "counterfactual_rmse": "cf_rmse",
+    #     "control_counterfactual_rmse": "control_cf_rmse",
+    #     "treated_counterfactual_rmse": "treated_cf_rmse",
+    #     "ate_abs_error": "ate_error"
+    # }
 
-    df = df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
+    # df = df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
 
     # Ensure missing expected columns exist (prevents KeyErrors in plotting)
     required_cols = [
@@ -170,6 +170,8 @@ def graph(xaxis, df_Forest, df_bart, df_knn):
                 visible=(i == 0)
             )
         )
+
+        # add knn results
         fig.add_trace(
             go.Scatter(
                 x=df_knn["replica"],
@@ -229,20 +231,20 @@ if __name__ == "__main__":
     if plotNum == 1:
         df_Forest = pd.read_csv(_FOREST_DIR / "forest_results.csv")
         df_bart = pd.read_csv(_BART_DIR / "bart_results_base.csv")
-        df_knn = pd.read_csv(_KNN_DIR / "results" / "original" / "k_18" / "metrics.csv")
+        df_knn = pd.read_csv(_KNN_DIR / "knn_results_base.csv")
         plot(df_Forest, df_bart, df_knn, plotNum)
     elif plotNum == 2:
         df_Forest = pd.read_csv(_FOREST_DIR / "forest_gaussianSTD.csv")
         df_bart = pd.read_csv(_BART_DIR / "bart_results_gaussian.csv")
-        df_knn = pd.read_csv(_KNN_DIR / "results" / "gaussianSTD" / "k_18" / "metrics.csv")
+        df_knn = pd.read_csv(_KNN_DIR / "knn_results_gaussian.csv")
         plot(df_Forest, df_bart, df_knn, plotNum)
     elif plotNum == 3:
         df_Forest = pd.read_csv(_FOREST_DIR / "forest_drop_repeat.csv")
         df_bart = pd.read_csv(_BART_DIR / "bart_results_drop.csv")
-        df_knn = pd.read_csv(_KNN_DIR / "results" / "drop" / "k_18" / "metrics.csv")
+        df_knn = pd.read_csv(_KNN_DIR / "knn_results_drop.csv")
         plot(df_Forest, df_bart, df_knn, plotNum)
     elif plotNum == 4:
         df_Forest = pd.read_csv(_FOREST_DIR / "forest_both.csv")
         df_bart = pd.read_csv(_BART_DIR / "bart_results_both.csv")
-        df_knn = pd.read_csv(_KNN_DIR / "results" / "noisy_drop" / "k_18" / "metrics.csv")
+        df_knn = pd.read_csv(_KNN_DIR / "knn_results_both.csv")
         plot(df_Forest, df_bart, df_knn, plotNum)

@@ -28,19 +28,19 @@ _KNN_DIR     = DIR / "KNN"
 def load_gaussian():
     forest = pd.read_csv(_FOREST_DIR / "forest_gaussianSTD.csv")
     bart   = pd.read_csv(_BART_DIR   / "bart_results_gaussian.csv")
-    knn    = pd.read_csv(_KNN_DIR    / "results" / "gaussianSTD" / "k_18" / "metrics.csv")
+    knn    = pd.read_csv(_KNN_DIR    / "knn_results_gaussian.csv")
     return forest, bart, knn
 
 def load_drop():
     forest = pd.read_csv(_FOREST_DIR / "forest_drop_repeat.csv")
     bart   = pd.read_csv(_BART_DIR   / "bart_results_drop.csv")
-    knn    = pd.read_csv(_KNN_DIR    / "results" / "drop" / "k_18" / "metrics.csv")
+    knn    = pd.read_csv(_KNN_DIR    / "knn_results_drop.csv")
     return forest, bart, knn
 
 def load_both():
     forest = pd.read_csv(_FOREST_DIR / "forest_both.csv")
     bart   = pd.read_csv(_BART_DIR   / "bart_results_both.csv")
-    knn    = pd.read_csv(_KNN_DIR    / "results" / "noisy_drop" / "k_18" / "metrics.csv")
+    knn    = pd.read_csv(_KNN_DIR    / "knn_results_both.csv")
     return forest, bart, knn
 
 

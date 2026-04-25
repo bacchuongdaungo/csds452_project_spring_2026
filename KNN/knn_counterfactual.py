@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,23 +12,23 @@ import numpy as np
 
 DEFAULT_DATA_PATTERN = "ihdp_npci_*.csv"
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "ihdp_dataset" / "csv"
-OUTPUT_DEFAULT_DIR = Path(__file__).resolve().parent / "results" / "original" / "k_5"
-OUTPUT_DEFAULT_DIR_TUNED = Path(__file__).resolve().parent / "results" / "original" / "k_18"
+OUTPUT_DEFAULT_PATH = Path(__file__).resolve().parent / "knn_results_base.csv"
+OUTPUT_DEFAULT_PATH_TUNED = Path(__file__).resolve().parent / "knn_results_base.csv"
 
 GAUSSIAN_STD_PATTERN = "ihdp_npci_1_noisy_std_*.csv"
 GAUSSIAN_STD_DATA_DIR = Path(__file__).resolve().parent.parent / "experiments" / "knn_counterfactual" / "noisy" / "gaussianSTD_test"
-OUTPUT_GAUSSIAN_STD_DIR = Path(__file__).resolve().parent / "results" / "gaussianSTD" / "k_5"
-OUTPUT_GAUSSIAN_STD_DIR_TUNED = Path(__file__).resolve().parent / "results" / "gaussianSTD" / "k_18"
+OUTPUT_GAUSSIAN_STD_PATH = Path(__file__).resolve().parent / "knn_results_gaussian.csv"
+OUTPUT_GAUSSIAN_STD_PATH_TUNED = Path(__file__).resolve().parent / "knn_results_gaussian.csv"
 
 DROP_PATTERN = "ihdp_npci_1_drop_*.csv"
 DROP_DATA_DIR = Path(__file__).resolve().parent.parent / "experiments" / "knn_counterfactual" / "noisy" / "drop_3_rep"
-OUTPUT_DROP_DIR = Path(__file__).resolve().parent / "results" / "drop" / "k_5"
-OUTPUT_DROP_DIR_TUNED = Path(__file__).resolve().parent / "results" / "drop" / "k_18"
+OUTPUT_DROP_PATH = Path(__file__).resolve().parent / "knn_results_drop.csv"
+OUTPUT_DROP_PATH_TUNED = Path(__file__).resolve().parent / "knn_results_drop.csv"
 
 NOISY_DROP_PATTERN = "ihdp_npci_1_noisy_drop_*.csv"
 NOISY_DROP_DATA_DIR = Path(__file__).resolve().parent.parent / "experiments" / "knn_counterfactual" / "noisy" / "both_noise"
-OUTPUT_NOISY_DROP_DIR = Path(__file__).resolve().parent / "results" / "noisy_drop" / "k_5"
-OUTPUT_NOISY_DROP_DIR_TUNED = Path(__file__).resolve().parent / "results" / "noisy_drop" / "k_18"
+OUTPUT_NOISY_DROP_PATH = Path(__file__).resolve().parent / "knn_results_both.csv"
+OUTPUT_NOISY_DROP_PATH_TUNED = Path(__file__).resolve().parent / "knn_results_both.csv"
 
 DATA_PATTERN_LIST = [
     DEFAULT_DATA_PATTERN,
@@ -44,18 +43,18 @@ DATA_DIR_LIST = [
     NOISY_DROP_DATA_DIR,
 ]
 
-OUTPUT_DIR_LIST = [
-    OUTPUT_DEFAULT_DIR,
-    OUTPUT_GAUSSIAN_STD_DIR,
-    OUTPUT_DROP_DIR,
-    OUTPUT_NOISY_DROP_DIR,
+OUTPUT_PATH_LIST = [
+    OUTPUT_DEFAULT_PATH,
+    OUTPUT_GAUSSIAN_STD_PATH,
+    OUTPUT_DROP_PATH,
+    OUTPUT_NOISY_DROP_PATH,
 ]
 
-OUTPUT_DIR_TUNED_LIST = [
-    OUTPUT_DEFAULT_DIR_TUNED,
-    OUTPUT_GAUSSIAN_STD_DIR_TUNED,
-    OUTPUT_DROP_DIR_TUNED,
-    OUTPUT_NOISY_DROP_DIR_TUNED,
+OUTPUT_PATH_TUNED_LIST = [
+    OUTPUT_DEFAULT_PATH_TUNED,
+    OUTPUT_GAUSSIAN_STD_PATH_TUNED,
+    OUTPUT_DROP_PATH_TUNED,
+    OUTPUT_NOISY_DROP_PATH_TUNED,
 ]
 
 
@@ -96,6 +95,8 @@ class KNNCounterfactualResult:
     ate_hat: float
     ate_true: float
     ate_abs_error: float
+    att_abs_error: float
+    policy_value: float
 
 
 def load_ihdp_replica(path: str | Path) -> IHDPDataset:
@@ -207,9 +208,14 @@ def estimate_counterfactuals(
     y1_hat = np.where(treated_mask, dataset.y_factual, y_cfactual_hat)
     ite_hat = y1_hat - y0_hat
     true_ite = dataset.mu1 - dataset.mu0
+    treated_mask = dataset.treatment == 1
 
     control_rmse = rmse(control_cf, dataset.y_cfactual[control_mask])
     treated_rmse = rmse(treated_cf, dataset.y_cfactual[treated_mask])
+    true_att = float(np.mean(true_ite[treated_mask]))
+    att_hat = float(np.mean(ite_hat[treated_mask]))
+    policy_treatment = ite_hat > 0.0
+    optimal_treatment = true_ite > 0.0
 
     return KNNCounterfactualResult(
         dataset=dataset.path,
@@ -228,6 +234,8 @@ def estimate_counterfactuals(
         ate_hat=float(np.mean(ite_hat)),
         ate_true=float(np.mean(true_ite)),
         ate_abs_error=float(abs(np.mean(ite_hat) - np.mean(true_ite))),
+        att_abs_error=float(abs(att_hat - true_att)),
+        policy_value=float(np.mean(policy_treatment == optimal_treatment)),
     )
 
 
@@ -271,19 +279,15 @@ def evaluate_replica_paths(
 
 def result_to_record(result: KNNCounterfactualResult) -> dict[str, Any]:
     return {
-        "dataset": result.dataset.name,
-        "dataset_path": str(result.dataset),
-        "k": result.k,
-        "metric": result.metric,
-        "scaled": result.scaled,
-        "weighted": result.weighted,
-        "counterfactual_rmse": result.counterfactual_rmse,
-        "control_counterfactual_rmse": result.control_counterfactual_rmse,
-        "treated_counterfactual_rmse": result.treated_counterfactual_rmse,
+        "replica": result.dataset.name,
+        "status": "ok",
         "pehe": result.pehe,
-        "ate_hat": result.ate_hat,
-        "ate_true": result.ate_true,
-        "ate_abs_error": result.ate_abs_error,
+        "ate_error": result.ate_abs_error,
+        "att_error": result.att_abs_error,
+        "policy_value": result.policy_value,
+        "cf_rmse": result.counterfactual_rmse,
+        "control_cf_rmse": result.control_counterfactual_rmse,
+        "treated_cf_rmse": result.treated_counterfactual_rmse,
     }
 
 
@@ -293,25 +297,25 @@ def aggregate_result_records(records: Iterable[dict[str, Any]]) -> dict[str, flo
         return None
 
     numeric_fields = (
-        "counterfactual_rmse",
-        "control_counterfactual_rmse",
-        "treated_counterfactual_rmse",
         "pehe",
-        "ate_hat",
-        "ate_true",
-        "ate_abs_error",
+        "ate_error",
+        "att_error",
+        "policy_value",
+        "cf_rmse",
+        "control_cf_rmse",
+        "treated_cf_rmse",
     )
     return {field: float(np.mean([row[field] for row in rows])) for field in numeric_fields}
 
 
 def save_results(
-    output_dir: str | Path,
+    output_path: str | Path,
     results: Iterable[KNNCounterfactualResult],
     extra_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Path]:
     rows = list(results)
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
+    csv_path = Path(output_path)
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
 
     records = [result_to_record(row) for row in rows]
     aggregate = aggregate_result_records(records)
@@ -322,44 +326,24 @@ def save_results(
     if extra_metadata:
         metadata["experiment"] = extra_metadata
 
-    summary_path = output_path / "summary.txt"
-    summary_path.write_text(summarize_results(rows) + "\n", encoding="utf-8")
-
-    json_path = output_path / "metrics.json"
-    json_path.write_text(
-        json.dumps({"metadata": metadata, "replicas": records}, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-
-    csv_path = output_path / "metrics.csv"
-    fieldnames = list(records[0].keys()) if records else [
-        "dataset",
-        "dataset_path",
-        "k",
-        "metric",
-        "scaled",
-        "weighted",
-        "counterfactual_rmse",
-        "control_counterfactual_rmse",
-        "treated_counterfactual_rmse",
+    fieldnames = [
+        "replica",
+        "status",
         "pehe",
-        "ate_hat",
-        "ate_true",
-        "ate_abs_error",
+        "ate_error",
+        "att_error",
+        "policy_value",
+        "cf_rmse",
+        "control_cf_rmse",
+        "treated_cf_rmse",
     ]
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(records)
 
-    metadata_path = output_path / "metadata.json"
-    metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
     return {
-        "summary": summary_path,
-        "json": json_path,
-        "csv": csv_path,
-        "metadata": metadata_path,
+        "csv": csv_path
     }
 
 
@@ -451,23 +435,63 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Disable z-score scaling of covariates before computing distances.",
     )
     parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Optional CSV file path to save results.",
+    )
+    parser.add_argument(
         "--output-dir",
         type=str,
         default=None,
-        help="Optional directory to save summary.txt, metrics.json, metrics.csv, and metadata.json.",
+        help="Deprecated. Directory where metrics.csv will be saved.",
     )
     return parser
 
 
 def main() -> None:
     args = build_arg_parser().parse_args()
-    # Iterate over corresponding patterns and directories
-    if args.k == 18:
-        output_dirs = OUTPUT_DIR_TUNED_LIST
-    else:
-        output_dirs = OUTPUT_DIR_LIST
+    scale = not args.no_scale
+    output_path = args.output
+    if args.output_dir:
+        output_path = str(Path(args.output_dir) / "metrics.csv")
 
-    for pattern, data_dir, output_dir in zip(DATA_PATTERN_LIST, DATA_DIR_LIST, output_dirs):
+    if args.input or args.input_dir or output_path:
+        paths = iter_replica_paths(args.input, args.input_dir, args.pattern)
+        if not paths:
+            raise SystemExit("No IHDP replica CSVs found.")
+
+        results = evaluate_replica_paths(
+            paths=paths,
+            k=args.k,
+            metric=args.metric,
+            scale=scale,
+            weighted=args.weighted,
+        )
+        print(summarize_results(results))
+
+        if output_path:
+            save_results(
+                output_path=output_path,
+                results=results,
+                extra_metadata={
+                    "input": args.input,
+                    "input_dir": args.input_dir,
+                    "pattern": args.pattern,
+                    "k": args.k,
+                    "metric": args.metric,
+                    "scale": scale,
+                    "weighted": args.weighted,
+                },
+            )
+        return
+
+    if args.k == 18:
+        output_paths = OUTPUT_PATH_TUNED_LIST
+    else:
+        output_paths = OUTPUT_PATH_LIST
+
+    for pattern, data_dir, output_path in zip(DATA_PATTERN_LIST, DATA_DIR_LIST, output_paths):
         print(f"\nEvaluating pattern: {pattern} in {data_dir}")
         paths = iter_replica_paths(None, data_dir, pattern)
         if not paths:
@@ -478,20 +502,20 @@ def main() -> None:
             paths=paths,
             k=args.k,
             metric=args.metric,
-            scale=not args.no_scale,
+            scale=scale,
             weighted=args.weighted,
         )
         summary = summarize_results(results)
         print(summary)
         save_results(
-            output_dir=output_dir,
+            output_path=output_path,
             results=results,
             extra_metadata={
                 "input_dir": str(data_dir),
                 "pattern": pattern,
                 "k": args.k,
                 "metric": args.metric,
-                "scale": not args.no_scale,
+                "scale": scale,
                 "weighted": args.weighted,
             },
         )
