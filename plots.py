@@ -116,7 +116,7 @@ def plot (df_Forest, df_bart, df_knn, plotNum):
         case 2:
             df_Forest = clean_noise_df(df_Forest)
             df_bart = clean_noise_df(df_bart)
-            df_knn = clean_knn_df(df_knn, "gaussianSTD")
+            df_knn = clean_noise_df(df_knn)
             graph("noise_std", df_Forest, df_bart, df_knn)
         case 3:
             df_Forest = clean_drop_df(df_Forest)
@@ -227,7 +227,7 @@ def graph(xaxis, df_Forest, df_bart, df_knn):
 
 
 if __name__ == "__main__":
-    plotNum = 4 # is base 2 is noisy 3 is drop 4 is both
+    plotNum = 2 # is base 2 is noisy 3 is drop 4 is both
     if plotNum == 1:
         df_Forest = pd.read_csv(_FOREST_DIR / "forest_results.csv")
         df_bart = pd.read_csv(_BART_DIR / "bart_results_base.csv")
